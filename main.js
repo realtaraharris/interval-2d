@@ -10,4 +10,4 @@ var ctx = fc(function (dt) {
   ctx.stroke();
   ctx.fill();
   ctx.dirty();
-});
+}, false);
