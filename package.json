@@ -1,0 +1,16 @@
+{
+  "name": "interval-2d",
+  "license": "MIT",
+  "repository": "https://github.com/maxharris9/interval-2d",
+  "scripts": {
+    "start": "budo main.js --live",
+    "test": "tape test-*.js"
+  },
+  "dependencies": {
+    "fc": "^1.4.3"
+  },
+  "devDependencies": {
+    "budo": "^5.1.0",
+    "tape": "^4.2.0"
+  }
+}
