@@ -9,5 +9,4 @@ var ctx = fc(function (dt) {
   ctx.strokeStyle = 'black';
   ctx.stroke();
   ctx.fill();
-  ctx.dirty();
 }, false);
