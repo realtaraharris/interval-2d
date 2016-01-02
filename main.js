@@ -4,9 +4,11 @@ var isub = require('interval-subtract');
 var imul = require('interval-multiply');
 
 var maxDepth = 9;
+var circleRadius = [5000, 5000];
+var side = 500;
 
 function circle (x, y) {
-  return isub(iadd(imul(x, x), imul(y, y)), [1000,1000]);
+  return isub(iadd(imul(x, x), imul(y, y)), circleRadius);
 }
 
 function crossesZero (interval) {
@@ -58,8 +60,6 @@ function box (lx, ly, ux, uy, ctx, depth) {
 }
 
 var ctx = fc(function (dt) {
-  var side = 500;
-
   ctx.translate(side, side);
   box(-side, -side, side, side, ctx, 0);
 }, false);
