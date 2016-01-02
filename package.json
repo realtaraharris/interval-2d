@@ -7,7 +7,10 @@
     "test": "tape test-*.js"
   },
   "dependencies": {
-    "fc": "^1.4.3"
+    "fc": "^1.4.3",
+    "interval-add": "^1.0.1",
+    "interval-subtract": "^1.0.0",
+    "interval-multiply": "^1.0.0"
   },
   "devDependencies": {
     "budo": "^5.1.0",
