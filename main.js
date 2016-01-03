@@ -60,6 +60,13 @@ function square (x, y, translation) {
   return isub(scsq, circleRadius, circleOut);
 }
 
+function rect(x, y, rx, ry, translation) {
+  var lx = [x[0] - translation[0], x[1] - translation[0]];
+  var ly = [y[0] - translation[1], y[1] - translation[1]];
+
+  return imax(isub(iabs(lx), rx), isub(iabs(ly), ry));
+}
+
 function crossesZero (interval) {
   return 0 >= interval[0] && 0 < interval[1];
 }
@@ -174,7 +181,7 @@ var ctx = fc(function (dt) {
 
   console.log('maxDepth:', box(translation, lx, ly, ux, uy, ctx, mouse.zoom, 0, function(x, y, translation) {
     return imin(
-      square(x, y, [translation[0] - 500, translation[1] + 350]),
+      rect(x, y, [100, 100], [10, 10], [translation[0], translation[1]]),
       imin(
         circle2(x, y, [8000, 8000], [translation[0] + 15, translation[1] - 70]),
         circle2(x, y, [1000, 1000], [translation[0] + 95, translation[1]])
