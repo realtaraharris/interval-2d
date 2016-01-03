@@ -4,9 +4,9 @@ var iadd = require('interval-add');
 var isub = require('interval-subtract');
 var imul = require('interval-multiply');
 
-var maxDepth = 10;
 var circleRadius = [5000, 5000];
 var side = 500;
+var max = Math.max;
 
 function circle (x, y) {
   return isub(iadd(imul(x, x), imul(y, y)), circleRadius);
@@ -24,41 +24,42 @@ function middle (interval) {
   return (interval[0] + interval[1]) / 2;
 }
 
-function box (lx, ly, ux, uy, ctx, depth) {
-  if (depth > maxDepth) return;
+function box (lx, ly, ux, uy, ctx, scale, depth) {
+  var maxDepth = depth;
+  var size = Math.max(ux - lx, uy - ly) * scale
+  if (size < 1) return maxDepth;
 
   var tmp = circle([lx, ux], [ly, uy]);
   if (crossesZero(tmp)) {
     var midx = middle([lx, ux]);
     var midy = middle([ly, uy]);
 
-    // if (depth > maxDepth - 1) {
-    if (depth > 0) {
-      ctx.beginPath()
-        ctx.strokeStyle = 'rgba(45,100,200, 0.5)';
-        ctx.fillStyle = 'rgba(255, 255, 255, 0.01)';
-        ctx.rect(lx, ly, (ux - lx), (uy - ly));
-      ctx.closePath()
-      ctx.stroke();
-      ctx.fill();
-    }
+    ctx.beginPath()
+      ctx.strokeStyle = 'rgba(45,100,200, 0.5)';
+      ctx.fillStyle = 'rgba(255, 255, 255, 0.01)';
+      ctx.rect(lx, ly, (ux - lx), (uy - ly));
+    ctx.closePath()
+    ctx.stroke();
+    ctx.fill();
 
     if (crossesZero(circle([midx, ux], [midy, uy]))) { // upper-right
-      box(midx, midy, ux, uy, ctx, depth + 1);
+      maxDepth = max(maxDepth, box(midx, midy, ux, uy, ctx, scale, depth + 1));
     }
 
     if (crossesZero(circle([lx, midx], [midy, uy]))) { // upper-left
-      box(lx, midy, midx, uy, ctx, depth + 1);
+      maxDepth = max(maxDepth, box(lx, midy, midx, uy, ctx, scale, depth + 1));
     }
 
     if (crossesZero(circle([lx, midx], [ly, midy]))) { // lower-right
-      box(lx, ly, midx, midy, ctx, depth + 1);
+      maxDepth = max(maxDepth, box(lx, ly, midx, midy, ctx, scale, depth + 1));
     }
 
     if (crossesZero(circle([midx, ux], [ly, midy]))) { // lower-left
-      box(midx, ly, ux, midy, ctx, depth + 1);
+      maxDepth = max(maxDepth, box(midx, ly, ux, midy, ctx, scale, depth + 1));
     }
   }
+
+  return maxDepth;
 }
 
 var mouse = { zoom: 1 }
@@ -77,5 +78,5 @@ var ctx = fc(function (dt) {
   ctx.lineWidth = 1/mouse.zoom
   var sside = Math.round(side / mouse.zoom);
 
-  box(-sside, -sside, sside, sside, ctx, 0);
+  console.log('maxDepth:', box(-sside, -sside, sside, sside, ctx, mouse.zoom, 0));
 }, false);
