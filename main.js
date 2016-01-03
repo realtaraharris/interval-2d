@@ -3,8 +3,9 @@ var center = require('ctx-translate-center')
 var iadd = require('interval-add');
 var isub = require('interval-subtract');
 var imul = require('interval-multiply');
+var imax = require('interval-max');
 
-var circleRadius = [5000, 5000];
+var circleRadius = [500, 500];
 var side = 500;
 var max = Math.max;
 
@@ -15,6 +16,14 @@ var scratchy = [0, 0];
 var circleOut = [0, 0];
 function circle (x, y) {
   return isub(iadd(imul(x, x, scratch0), imul(y, y, scratch1), scratch0), circleRadius, circleOut);
+}
+
+var scsq = [0, 0];
+function square (x, y) {
+  imax(iabs(x), iabs(y), scsq);
+
+  //return isub(scsq, [500, 500]);
+  return isub(scsq, circleRadius, circleOut);
 }
 
 function crossesZero (interval) {
@@ -34,16 +43,19 @@ function iset(out, l, u) {
   out[1] = u;
 }
 
-function box (lx, ly, ux, uy, ctx, scale, depth) {
+function iabs (interval) {
+  return [ Math.abs(interval[0]), Math.abs(interval[1]) ];
+}
+
+function box (lx, ly, ux, uy, ctx, scale, depth, fn) {
   var maxDepth = depth;
   var size = Math.max(ux - lx, uy - ly) * scale
   if (size < 1) return maxDepth;
 
-
   iset(scratchx, lx, ux);
   iset(scratchy, ly, uy);
 
-  if (crossesZero(circle(scratchx, scratchy))) {
+  if (crossesZero(fn(scratchx, scratchy))) {
     var midx = middle(lx, ux);
     var midy = middle(ly, uy);
 
@@ -51,26 +63,26 @@ function box (lx, ly, ux, uy, ctx, scale, depth) {
 
     iset(scratchx, midx, ux);
     iset(scratchy, midy, uy);
-    if (crossesZero(circle(scratchx, scratchy))) { // upper-right
-      maxDepth = max(maxDepth, box(midx, midy, ux, uy, ctx, scale, depth + 1));
+    if (crossesZero(fn(scratchx, scratchy))) { // upper-right
+      maxDepth = max(maxDepth, box(midx, midy, ux, uy, ctx, scale, depth + 1, fn));
     }
 
     iset(scratchx, lx, midx);
     iset(scratchy, midy, uy);
-    if (crossesZero(circle(scratchx, scratchy))) { // upper-left
-      maxDepth = max(maxDepth, box(lx, midy, midx, uy, ctx, scale, depth + 1));
+    if (crossesZero(fn(scratchx, scratchy))) { // upper-left
+      maxDepth = max(maxDepth, box(lx, midy, midx, uy, ctx, scale, depth + 1, fn));
     }
 
     iset(scratchx, lx, midx);
     iset(scratchy, ly, midy);
-    if (crossesZero(circle(scratchx, scratchy))) { // lower-right
-      maxDepth = max(maxDepth, box(lx, ly, midx, midy, ctx, scale, depth + 1));
+    if (crossesZero(fn(scratchx, scratchy))) { // lower-right
+      maxDepth = max(maxDepth, box(lx, ly, midx, midy, ctx, scale, depth + 1, fn));
     }
 
     iset(scratchx, midx, ux);
     iset(scratchy, ly, midy);
-    if (crossesZero(circle(scratchx, scratchy))) { // lower-left
-      maxDepth = max(maxDepth, box(midx, ly, ux, midy, ctx, scale, depth + 1));
+    if (crossesZero(fn(scratchx, scratchy))) { // lower-left
+      maxDepth = max(maxDepth, box(midx, ly, ux, midy, ctx, scale, depth + 1, fn));
     }
   }
 
@@ -95,5 +107,5 @@ var ctx = fc(function (dt) {
   ctx.lineWidth = 1/mouse.zoom
   var sside = side / mouse.zoom;
 
-  console.log('maxDepth:', box(-sside, -sside, sside, sside, ctx, mouse.zoom, 0));
+  console.log('maxDepth:', box(-sside, -sside, sside, sside, ctx, mouse.zoom, 0, circle));
 }, false);

@@ -9,6 +9,7 @@
   "dependencies": {
     "fc": "^1.4.3",
     "interval-add": "^1.0.1",
+    "interval-max": "^1.0.0",
     "interval-subtract": "^1.0.0",
     "interval-multiply": "^1.0.0"
   },
