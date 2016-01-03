@@ -74,8 +74,10 @@ function iset(out, l, u) {
 }
 
 function opicut(a, b) {
+  var la = -a[0];
+  var ua = -a[1];
   return imax(
-    [-a[0], -a[1]],
+    [min(la, ua), max(la, ua)],
     b
   )
 }
@@ -176,9 +178,9 @@ var ctx = fc(function (dt) {
   var uy =  hh;
 
   console.log('maxDepth:', box(translation, lx, ly, ux, uy, ctx, mouse.zoom, 0, function(x, y, translation) {
-    return imin(
-      circle2(x, y, [100, 100], translation),
-      circle2(x, y, [100, 100], [translation[0] + 15, translation[1]])
+    return opicut(
+      circle2(x, y, [100, 100], [translation[0] + 15, translation[1]]),
+      circle2(x, y, [100, 100], translation)
     )
   }));
 
