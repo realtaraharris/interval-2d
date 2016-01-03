@@ -41,6 +41,19 @@ function ilensq(a, b) {
   return [pa[0] + pb[0], pa[1] + pb[1]]
 }
 
+function isqrt(a) {
+  return [Math.sqrt(a[0]), Math.sqrt(a[1])];
+}
+
+function ilen(a, b) {
+  var pa = isqr(a);
+  var pb = isqr(b);
+  return isqrt([
+    pa[0] + pb[0],
+    pa[1] + pb[1]
+  ])
+}
+
 function circle2(x, y, r, translation)
 {
   var lx = [x[0] - translation[0], x[1] - translation[0]];
