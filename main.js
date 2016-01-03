@@ -31,10 +31,10 @@ function box (lx, ly, ux, uy, ctx, depth) {
     var midx = middle([lx, ux]);
     var midy = middle([ly, uy]);
 
-    //if (depth > maxDepth - 1) {
-    if (depth > 0) {
-      ctx.strokeStyle = 'rgba(45,100,200, 0.01);';
-      ctx.fillStyle = 'rgba(255, 255, 255, 0.01);';
+    if (depth > maxDepth - 1) {
+    //if (depth > 0) {
+      ctx.strokeStyle = 'rgba(45,100,200, 0.01)';
+      ctx.fillStyle = 'rgba(255, 255, 255, 0.01)';
 
       ctx.rect(lx, ly, (ux - lx), (uy - ly));
       ctx.stroke();
