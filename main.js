@@ -4,10 +4,12 @@ var iadd = require('interval-add');
 var isub = require('interval-subtract');
 var imul = require('interval-multiply');
 var imax = require('interval-max');
+var imin = require('interval-min');
 
 var circleRadius = [500, 500];
 var side = 500;
 var max = Math.max;
+var min = Math.min;
 
 var scratch0 = [0, 0];
 var scratch1 = [0, 0];
@@ -19,6 +21,32 @@ function circle (x, y, translation) {
   var ly = [y[0] - translation[1], y[1] - translation[1]];
 
   return isub(iadd(imul(lx, lx, scratch0), imul(ly, ly, scratch1), scratch0), circleRadius, circleOut);
+}
+
+function isqr(a) {
+  if (a[0]>=0.0) {
+    return [a[0] * a[0], a[1] * a[1]]
+  } else if (a[1] < 0.0) {
+    return [a[1] * a[1], a[0] * a[0]]
+  } else {
+    return [0.0, max(a[0]*a[0], a[1]*a[1])]
+  }
+
+}
+
+function ilensq(a, b) {
+  var pa = isqr(a)
+  var pb = isqr(b)
+
+  return [pa[0] + pb[0], pa[1] + pb[1]]
+}
+
+function circle2(x, y, r, translation)
+{
+  var lx = [x[0] - translation[0], x[1] - translation[0]];
+  var ly = [y[0] - translation[1], y[1] - translation[1]];
+
+  return isub(ilensq(lx, ly), r || [50, 50]);
 }
 
 var scsq = [0, 0];
@@ -33,11 +61,7 @@ function square (x, y, translation) {
 }
 
 function crossesZero (interval) {
-  return (
-    interval[0] === 0 ||
-    interval[1] === 0 ||
-    Math.sign(interval[0]) !== Math.sign(interval[1])
-  );
+  return 0 >= interval[0] && 0 < interval[1];
 }
 
 function middle (l, u) {
@@ -49,8 +73,18 @@ function iset(out, l, u) {
   out[1] = u;
 }
 
+function opicut(a, b) {
+  return imax(
+    [-a[0], -a[1]],
+    b
+  )
+}
+
 function iabs (interval) {
-  return [ Math.abs(interval[0]), Math.abs(interval[1]) ];
+  var l = Math.abs(interval[0])
+  var u = Math.abs(interval[1])
+
+  return [min(l, u), max(l, u)];
 }
 
 function box (translation, lx, ly, ux, uy, ctx, scale, depth, fn) {
@@ -141,7 +175,12 @@ var ctx = fc(function (dt) {
   var ux =  hw;
   var uy =  hh;
 
-  console.log('maxDepth:', box(translation, lx, ly, ux, uy, ctx, mouse.zoom, 0, circle));
+  console.log('maxDepth:', box(translation, lx, ly, ux, uy, ctx, mouse.zoom, 0, function(x, y, translation) {
+    return imin(
+      circle2(x, y, [100, 100], translation),
+      circle2(x, y, [100, 100], [translation[0] + 15, translation[1]])
+    )
+  }));
 
   ctx.strokeStyle = "#f0f"
   ctx.strokeRect(lx, ly, ux - lx, uy - ly);

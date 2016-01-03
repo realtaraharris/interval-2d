@@ -16,6 +16,7 @@
   "devDependencies": {
     "budo": "^5.1.0",
     "ctx-translate-center": "^1.0.0",
+    "interval-min": "^1.0.0",
     "tape": "^4.2.0"
   }
 }
