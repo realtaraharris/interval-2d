@@ -1,9 +1,10 @@
 var fc = require('fc');
+var center = require('ctx-translate-center')
 var iadd = require('interval-add');
 var isub = require('interval-subtract');
 var imul = require('interval-multiply');
 
-var maxDepth = 9;
+var maxDepth = 10;
 var circleRadius = [5000, 5000];
 var side = 500;
 
@@ -31,12 +32,13 @@ function box (lx, ly, ux, uy, ctx, depth) {
     var midx = middle([lx, ux]);
     var midy = middle([ly, uy]);
 
-    if (depth > maxDepth - 1) {
-    //if (depth > 0) {
-      ctx.strokeStyle = 'rgba(45,100,200, 0.01)';
-      ctx.fillStyle = 'rgba(255, 255, 255, 0.01)';
-
-      ctx.rect(lx, ly, (ux - lx), (uy - ly));
+    // if (depth > maxDepth - 1) {
+    if (depth > 0) {
+      ctx.beginPath()
+        ctx.strokeStyle = 'rgba(45,100,200, 0.5)';
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.01)';
+        ctx.rect(lx, ly, (ux - lx), (uy - ly));
+      ctx.closePath()
       ctx.stroke();
       ctx.fill();
     }
@@ -59,7 +61,21 @@ function box (lx, ly, ux, uy, ctx, depth) {
   }
 }
 
+var mouse = { zoom: 1 }
+window.addEventListener('mousewheel', function(e) {
+  ctx.dirty();
+  mouse.zoom += e.wheelDelta / 500;
+  if (mouse.zoom < .1) {
+    mouse.zoom = .1;
+  }
+  e.preventDefault();
+})
+
 var ctx = fc(function (dt) {
-  ctx.translate(side, side);
-  box(-side, -side, side, side, ctx, 0);
+  center(ctx);
+  ctx.scale(mouse.zoom, mouse.zoom)
+  ctx.lineWidth = 1/mouse.zoom
+  var sside = Math.round(side / mouse.zoom);
+
+  box(-sside, -sside, sside, sside, ctx, 0);
 }, false);
