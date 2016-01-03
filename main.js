@@ -76,7 +76,7 @@ var ctx = fc(function (dt) {
   center(ctx);
   ctx.scale(mouse.zoom, mouse.zoom)
   ctx.lineWidth = 1/mouse.zoom
-  var sside = Math.round(side / mouse.zoom);
+  var sside = side / mouse.zoom;
 
   console.log('maxDepth:', box(-sside, -sside, sside, sside, ctx, mouse.zoom, 0));
 }, false);
