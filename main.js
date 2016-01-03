@@ -22,8 +22,11 @@ function circle (x, y, translation) {
 }
 
 var scsq = [0, 0];
-function square (x, y) {
-  imax(iabs(x), iabs(y), scsq);
+function square (x, y, translation) {
+  var lx = [x[0] - translation[0], x[1] - translation[0]];
+  var ly = [y[0] - translation[1], y[1] - translation[1]];
+
+  imax(iabs(lx), iabs(ly), scsq);
 
   //return isub(scsq, [500, 500]);
   return isub(scsq, circleRadius, circleOut);
