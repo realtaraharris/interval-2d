@@ -85,8 +85,12 @@ function rect2 (x, y, rx, ry, translation) {
   var ly = [y[0] - translation[1], y[1] - translation[1]];
 
   var f = imax(isub(lx, rx), isub(ly, ry));
-  var g = imax(iadd(lx, rx), iadd(ly, ry));
-  return imul(g,f);
+  var g = imin(iadd(lx, rx), iadd(ly, ry));
+
+  if (f[0] > 0 || f[1] < -100) { return [0,0] }
+  if (g[0] > 100 || g[1] < 0) { return [0,0] }
+
+  return imul(f,g);
 }
 
 function crossesZero (interval) {
