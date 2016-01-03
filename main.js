@@ -155,8 +155,8 @@ window.addEventListener('mousemove', function(e) {
 
 var translation = [0, 0]
 var ctx = fc(function (dt) {
-  ctx.clear('white');
-  ctx.strokeStyle = 'rgba(45,100,200, 0.5)';
+  ctx.clear('black');
+  ctx.strokeStyle = 'rgba(255,5,5, 0.25)';
   center(ctx);
   // ctx.translate(mouse.translate[0], mouse.translate[1]);
   ctx.scale(mouse.zoom, mouse.zoom)
@@ -178,9 +178,12 @@ var ctx = fc(function (dt) {
   var uy =  hh;
 
   console.log('maxDepth:', box(translation, lx, ly, ux, uy, ctx, mouse.zoom, 0, function(x, y, translation) {
-    return opicut(
-      circle2(x, y, [100, 100], [translation[0] + 15, translation[1]]),
-      circle2(x, y, [100, 100], translation)
+    return imin(
+      square(x, y, [translation[0] - 500, translation[1] + 350]),
+      imin(
+        circle2(x, y, [8000, 8000], [translation[0] + 15, translation[1] - 70]),
+        circle2(x, y, [1000, 1000], [translation[0] + 95, translation[1]])
+      )
     )
   }));
 
