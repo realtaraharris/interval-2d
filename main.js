@@ -209,11 +209,14 @@ var ctx = fc(function (dt) {
     // return rect(x, y, [50, 50], [50, 50], [translation[0] -51, translation[1] -51])
     // return rect2(x, y, [75, 75], [50, 50], [translation[0] -25, translation[1] -25])
     return imin(
-      rect2(x, y, [200, 200], [10, 10], [translation[0], translation[1]]),
       imin(
-        circle2(x, y, [8000, 8000], [translation[0] + 15, translation[1] - 70]),
-        circle2(x, y, [1000, 1000], [translation[0] + 95, translation[1]])
-      )
+        imax(
+          imul(circle2(x, y, [1000, 1000], [translation[0] + 50, translation[1] - 10]), [-1, -1]),
+          circle2(x, y, [2000, 2000], [translation[0] + 50, translation[1] - 10])
+        ),
+        circle2(x, y, [8000, 8000], [translation[0] + 15, translation[1] - 70])
+      ),
+      rect2(x, y, [200, 200], [10, 10], [translation[0], translation[1]])
     )
   }));
 
