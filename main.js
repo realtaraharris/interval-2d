@@ -31,7 +31,6 @@ function isqr(a) {
   } else {
     return [0.0, max(a[0]*a[0], a[1]*a[1])]
   }
-
 }
 
 function ilensq(a, b) {
@@ -54,41 +53,36 @@ function ilen(a, b) {
   ])
 }
 
-function circle2(x, y, r, translation)
-{
+function circle2 (x, y, r, translation) {
+  var radius = [r, r];
   var lx = [x[0] - translation[0], x[1] - translation[0]];
   var ly = [y[0] - translation[1], y[1] - translation[1]];
 
-  return isub(ilensq(lx, ly), r || [50, 50]);
+  return isub(ilensq(lx, ly), radius);
 }
 
-var scsq = [0, 0];
-function square (x, y, translation) {
+function rect (x, y, w, h, translation) {
+  var width = [w, w];
+  var height = [h, h];
+
   var lx = [x[0] - translation[0], x[1] - translation[0]];
   var ly = [y[0] - translation[1], y[1] - translation[1]];
 
-  imax(iabs(lx), iabs(ly), scsq);
-
-  //return isub(scsq, [500, 500]);
-  return isub(scsq, circleRadius, circleOut);
+  return imax(isub(iabs(lx), width), isub(iabs(ly), height));
 }
 
-function rect(x, y, rx, ry, translation) {
+function rect2 (x, y, w, h, translation) {
+  var width = [w, w];
+  var height = [h, h];
+
   var lx = [x[0] - translation[0], x[1] - translation[0]];
   var ly = [y[0] - translation[1], y[1] - translation[1]];
 
-  return imax(isub(iabs(lx), rx), isub(iabs(ly), ry));
-}
+  var f = imax(isub(lx, width), isub(ly, height));
+  var g = imin(iadd(lx, width), iadd(ly, height));
 
-function rect2 (x, y, rx, ry, translation) {
-  var lx = [x[0] - translation[0], x[1] - translation[0]];
-  var ly = [y[0] - translation[1], y[1] - translation[1]];
-
-  var f = imax(isub(lx, rx), isub(ly, ry));
-  var g = imin(iadd(lx, rx), iadd(ly, ry));
-
-  if (f[0] > 0 || f[1] < -(rx[0]*2)) { return [1,1] }
-  if (g[0] > (ry[0]*2) || g[1] < 0) { return [1,1] }
+  if (f[0] > 0 || f[1] < -(w*2)) { return [1,1] }
+  if (g[0] > (h*2) || g[1] < 0) { return [1,1] }
 
   return imul(f,g);
 }
@@ -206,17 +200,16 @@ var ctx = fc(function (dt) {
   var uy =  hh;
 
   console.log('maxDepth:', box(translation, lx, ly, ux, uy, ctx, mouse.zoom, 0, function(x, y, translation) {
-    // return rect(x, y, [50, 50], [50, 50], [translation[0] -51, translation[1] -51])
-    // return rect2(x, y, [75, 75], [50, 50], [translation[0] -25, translation[1] -25])
+    // return rect2(x, y, 75, 50, [translation[0] -25, translation[1] -25])
     return imin(
       imin(
         imax(
-          imul(circle2(x, y, [1000, 1000], [translation[0] + 50, translation[1] - 10]), [-1, -1]),
-          circle2(x, y, [2000, 2000], [translation[0] + 50, translation[1] - 10])
+          imul(circle2(x, y, 1000, [translation[0] + 50, translation[1] - 10]), [-1, -1]),
+          circle2(x, y, 2000, [translation[0] + 50, translation[1] - 10])
         ),
-        circle2(x, y, [8000, 8000], [translation[0] + 15, translation[1] - 70])
+        circle2(x, y, 8000, [translation[0] + 15, translation[1] - 70])
       ),
-      rect2(x, y, [200, 200], [10, 10], [translation[0], translation[1]])
+      rect2(x, y, 200, 10, [translation[0], translation[1]])
     )
   }));
 
