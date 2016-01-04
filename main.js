@@ -87,8 +87,8 @@ function rect2 (x, y, rx, ry, translation) {
   var f = imax(isub(lx, rx), isub(ly, ry));
   var g = imin(iadd(lx, rx), iadd(ly, ry));
 
-  if (f[0] > 0 || f[1] < -(rx[0]*2)) { return [100,100] }
-  if (g[0] > (rx[0]*2) || g[1] < 0) { return [100,100] }
+  if (f[0] > 0 || f[1] < -(rx[0]*2)) { return [1,1] }
+  if (g[0] > (ry[0]*2) || g[1] < 0) { return [1,1] }
 
   return imul(f,g);
 }
@@ -209,7 +209,7 @@ var ctx = fc(function (dt) {
     // return rect(x, y, [50, 50], [50, 50], [translation[0] -51, translation[1] -51])
     // return rect2(x, y, [75, 75], [50, 50], [translation[0] -25, translation[1] -25])
     return imin(
-      rect2(x, y, [100, 100], [10, 10], [translation[0], translation[1]]),
+      rect2(x, y, [200, 200], [10, 10], [translation[0], translation[1]]),
       imin(
         circle2(x, y, [8000, 8000], [translation[0] + 15, translation[1] - 70]),
         circle2(x, y, [1000, 1000], [translation[0] + 95, translation[1]])
