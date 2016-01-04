@@ -87,8 +87,8 @@ function rect2 (x, y, rx, ry, translation) {
   var f = imax(isub(lx, rx), isub(ly, ry));
   var g = imin(iadd(lx, rx), iadd(ly, ry));
 
-  if (f[0] > 0 || f[1] < -100) { return [0,0] }
-  if (g[0] > 100 || g[1] < 0) { return [0,0] }
+  if (f[0] > 0 || f[1] < -(rx[0]*2)) { return [0,0] }
+  if (g[0] > (rx[0]*2) || g[1] < 0) { return [0,0] }
 
   return imul(f,g);
 }
@@ -207,7 +207,7 @@ var ctx = fc(function (dt) {
 
   console.log('maxDepth:', box(translation, lx, ly, ux, uy, ctx, mouse.zoom, 0, function(x, y, translation) {
     // return rect(x, y, [50, 50], [50, 50], [translation[0] -51, translation[1] -51])
-    return rect2(x, y, [50, 50], [50, 50], [translation[0] -25, translation[1] -25])
+    return rect2(x, y, [75, 75], [50, 50], [translation[0] -25, translation[1] -25])
     // return imin(
     //   rect(x, y, [100, 100], [10, 10], [translation[0], translation[1]]),
     //   imin(
