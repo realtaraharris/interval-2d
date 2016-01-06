@@ -3,25 +3,10 @@ var center = require('ctx-translate-center')
 var iadd = require('interval-add');
 var isub = require('interval-subtract');
 var imul = require('interval-multiply');
-// var imax = require('interval-max');
 var imin = require('interval-min');
 
-var circleRadius = [500, 500];
-var side = 500;
 var max = Math.max;
 var min = Math.min;
-
-var scratch0 = [0, 0];
-var scratch1 = [0, 0];
-var scratchx = [0, 0];
-var scratchy = [0, 0];
-var circleOut = [0, 0];
-function circle (x, y, translation) {
-  var lx = [x[0] - translation[0], x[1] - translation[0]];
-  var ly = [y[0] - translation[1], y[1] - translation[1]];
-
-  return isub(iadd(imul(lx, lx, scratch0), imul(ly, ly, scratch1), scratch0), circleRadius, circleOut);
-}
 
 function isqr(a) {
   if (a[0]>=0.0) {
@@ -53,41 +38,6 @@ function ilen(a, b) {
   ])
 }
 
-function circle2 (x, y, r, translation) {
-  var radius = [r, r];
-  var lx = [x[0] - translation[0], x[1] - translation[0]];
-  var ly = [y[0] - translation[1], y[1] - translation[1]];
-
-  return isub(ilen(lx, ly), radius);
-}
-
-function rect (x, y, w, h, translation) {
-  var width = [w, w];
-  var height = [h, h];
-
-  var lx = [x[0] - translation[0], x[1] - translation[0]];
-  var ly = [y[0] - translation[1], y[1] - translation[1]];
-
-  return imax(isub(iabs(lx), width), isub(iabs(ly), height));
-}
-
-function rect3 (x, y, w, h, translation) {
-  var width = [w, w];
-  var height = [h, h];
-
-  var lx = [x[0] - translation[0], x[1] - translation[0]];
-  var ly = [y[0] - translation[1], y[1] - translation[1]];
-
-  var f = imax(isub(lx, width), isub(ly, height));
-  var g = imin(iadd(lx, width), iadd(ly, height));
-
-  if (f[0] > 0 || f[1] < -(w*2)) { return [1,1] }
-  if (g[0] > (h*2) || g[1] < 0) { return [1,1] }
-
-  return imul(f,g);
-}
-
-/* result := absolute value of i */
 function iabs (i) {
   if (i[0] >= 0.0) {
     return i;
@@ -98,39 +48,59 @@ function iabs (i) {
   }
 }
 
-function imax (X, Y) {
-  if (X[1] <= Y[0]) {
-    return Y;                // A
+function imax (a, b) {
+  if (a[1] <= b[0]) {
+    return b;
   }
-  if (X[0] <= Y[0]) {
-    if (Y[0] <= X[1]) {
-      if (X[1] <= Y[1]) {
-        return Y;            // B
+
+  if (a[0] <= b[0]) {
+    if (b[0] <= a[1]) {
+      if (a[1] <= b[1]) {
+        return b;
       } else {
-        return [Y[0], X[1]]; // C
+        return [b[0], a[1]];
       }
     }
   }
 
-  if (Y[1] <= X[0]) {
-    return X; // D
+  if (b[1] <= a[0]) {
+    return a;
   }
-  if (Y[0] <= X[0]) {
-    if (X[0] <= Y[1]) {
-      if (Y[1] <= X[1]) {
-        return X;            // E
+
+  if (b[0] <= a[0]) {
+    if (a[0] <= b[1]) {
+      if (b[1] <= a[1]) {
+        return a;
       } else {
-        return [X[0], Y[1]]; // F
+        return [a[0], b[1]];
       }
     }
   }
 }
 
-function rect2 (x, y, rx, ry, p) {
-  return imax(
-    isub(iabs(isub(x, ival(p[0]))), rx),
-    isub(iabs(isub(y, ival(p[1]))), ry)
+function iset(out, l, u) {
+  out[0] = l;
+  out[1] = u;
+}
+
+function ival(v) {
+  return [v, v]
+}
+
+function ipowsmooth(a, b, k) {
+  k = k || ival(8);
+  a = ipow(a, k);
+  b = ipow(b, k);
+  return ipow(
+    idiv(imul(a, b), iadd(a, b)),
+    idiv(ival(1.0), k)
   );
+}
+
+function idiv(a, b) {
+  var l = a[0] / b[0];
+  var u = a[1] / b[1];
+  return [min(l, u), max(l, u)]
 }
 
 function crossesZero (interval) {
@@ -141,9 +111,18 @@ function middle (l, u) {
   return (l + u) * 0.5;
 }
 
-function iset(out, l, u) {
-  out[0] = l;
-  out[1] = u;
+function circle (x, y, r, translation) {
+  var lx = [x[0] - translation[0], x[1] - translation[0]];
+  var ly = [y[0] - translation[1], y[1] - translation[1]];
+
+  return isub(ilen(lx, ly), r);
+}
+
+function rect (x, y, rx, ry, p) {
+  return imax(
+    isub(iabs(isub(x, ival(p[0]))), rx),
+    isub(iabs(isub(y, ival(p[1]))), ry)
+  );
 }
 
 function opicut(a, b) {
@@ -155,12 +134,12 @@ function opicut(a, b) {
   )
 }
 
-
-
+var scratchx = [0, 0];
+var scratchy = [0, 0];
 function box (translation, lx, ly, ux, uy, ctx, scale, depth, fn) {
   var maxDepth = depth;
   var size = Math.max(ux - lx, uy - ly) * scale
-  if (size < 4) return maxDepth;
+  if (size < 1) return maxDepth;
 
   var midx = middle(lx, ux);
   var midy = middle(ly, uy);
@@ -216,27 +195,6 @@ window.addEventListener('mousemove', function(e) {
   }
 })
 
-function ival(v) {
-  return [v, v]
-}
-
-function ipowsmooth(a, b, k) {
-  k = k || ival(8);
-  a = ipow(a, k);
-  b = ipow(b, k);
-  return ipow(
-    idiv(imul(a, b), iadd(a, b)),
-    idiv(ival(1.0), k)
-  );
-}
-
-function idiv(a, b) {
-  var l = a[0] / b[0];
-  var u = a[1] / b[1];
-  return [min(l, u), max(l, u)]
-}
-
-
 var translation = [0, 0]
 var ctx = fc(function (dt) {
   ctx.clear('black');
@@ -261,43 +219,49 @@ var ctx = fc(function (dt) {
   var ux =  hw;
   var uy =  hh;
 
-  console.log('maxDepth:', box(translation, lx, ly, ux, uy, ctx, mouse.zoom, 0, function(x, y, translation) {
+  console.log('maxDepth:', box(translation, lx, ly, ux, uy, ctx, mouse.zoom, 0, function (x, y, translation) {
+    // var moving = circle(x, y, ival(200), [translation[0] + 50, translation[1] - 10]);
+    var moving = rect(x, y, ival(75), ival(50), [translation[0] - 25, translation[1] - 25]);
+    var fixed = circle(x, y, ival(200), [0, 0]);
 
-    // var moving = circle2(x, y, 200, [translation[0] + 50, translation[1] - 10]);//rect2(x, y, 75, 50, [translation[0] -25, translation[1] -25])
-    // var fixed = circle2(x, y, 200, [0, 0])
+    // var fixed = circle(x, y, ival(50), ival(0));
+    // var moving = rect(x, y, ival(10), ival(60), translation);
+    // var moving = circle(x, y, ival(100), [translation[0] + 50, translation[1] - 10]);
 
-var fixed = circle2(x, y, 50, ival(0))
-var moving = rect2(x, y, ival(60), ival(60), translation);//circle2(x, y, 100, [translation[0] + 50, translation[1] - 10])
+    // return isub(
+    //   ival(1.0),
+    //   iadd(
+    //     idiv(ival(.01), isqr(fixed)),
+    //     idiv(ival(.01), isqr(moving))
+    //   )
+    // );
 
- // return isub(
- //    ival(1.0),
- //    iadd(
- //      idiv(ival(.01), isqr(fixed)),
- //      idiv(ival(.01), isqr(moving))
- //    )
- //  );
-
-    return imin(
-      imin(fixed, moving),
-      imul(
-        iadd(
-          isub(fixed, ival(10)),
-          moving
-        ),
-        isqrt(ival(0.5))
-      )
-    );
+    return imax(
+      imul(moving, ival(-1)),
+      fixed
+    )
 
     // return imin(
-    //   imin(
-    //     imax(
-    //       imul(circle2(x, y, 1000, [translation[0] + 50, translation[1] - 10]), [-1, -1]),
-    //       circle2(x, y, 2000, [translation[0] + 50, translation[1] - 10])
+    //   imin(fixed, moving),
+    //   imul(
+    //     iadd(
+    //       isub(fixed, ival(500)),
+    //       moving
     //     ),
-    //     circle2(x, y, 8000, [translation[0] + 15, translation[1] - 70])
+    //     isqrt(ival(0.5))
+    //   )
+    // );
+
+    // return imin(
+    //   imax(
+    //     imax(
+    //       imul(circle(x, y, ival(180), [translation[0] + 50, translation[1] - 10]), ival(-1)),
+    //       circle(x, y, ival(200), [translation[0] + 50, translation[1] - 10])
+    //     ),
+    //     circle(x, y, ival(800), [translation[0] + 15, translation[1] - 70])
     //   ),
-    //   rect2(x, y, 200, 10, [translation[0], translation[1]])
-    // )
+    //   rect(x, y, ival(200), ival(10), [translation[0] + 250, translation[1] + 180])
+    // );
   }));
 
   ctx.strokeStyle = "#f0f"
