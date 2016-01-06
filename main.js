@@ -3,7 +3,7 @@ var center = require('ctx-translate-center')
 var iadd = require('interval-add');
 var isub = require('interval-subtract');
 var imul = require('interval-multiply');
-var imax = require('interval-max');
+// var imax = require('interval-max');
 var imin = require('interval-min');
 
 var circleRadius = [500, 500];
@@ -58,7 +58,7 @@ function circle2 (x, y, r, translation) {
   var lx = [x[0] - translation[0], x[1] - translation[0]];
   var ly = [y[0] - translation[1], y[1] - translation[1]];
 
-  return isub(ilensq(lx, ly), radius);
+  return isub(ilen(lx, ly), radius);
 }
 
 function rect (x, y, w, h, translation) {
@@ -71,7 +71,7 @@ function rect (x, y, w, h, translation) {
   return imax(isub(iabs(lx), width), isub(iabs(ly), height));
 }
 
-function rect2 (x, y, w, h, translation) {
+function rect3 (x, y, w, h, translation) {
   var width = [w, w];
   var height = [h, h];
 
@@ -85,6 +85,52 @@ function rect2 (x, y, w, h, translation) {
   if (g[0] > (h*2) || g[1] < 0) { return [1,1] }
 
   return imul(f,g);
+}
+
+/* result := absolute value of i */
+function iabs (i) {
+  if (i[0] >= 0.0) {
+    return i;
+  } else if (i[1] <= 0.0) {
+    return [-i[1], -i[0]];
+  } else {
+    return [0, Math.max(-i[0], i[1])];
+  }
+}
+
+function imax (X, Y) {
+  if (X[1] <= Y[0]) {
+    return Y;                // A
+  }
+  if (X[0] <= Y[0]) {
+    if (Y[0] <= X[1]) {
+      if (X[1] <= Y[1]) {
+        return Y;            // B
+      } else {
+        return [Y[0], X[1]]; // C
+      }
+    }
+  }
+
+  if (Y[1] <= X[0]) {
+    return X; // D
+  }
+  if (Y[0] <= X[0]) {
+    if (X[0] <= Y[1]) {
+      if (Y[1] <= X[1]) {
+        return X;            // E
+      } else {
+        return [X[0], Y[1]]; // F
+      }
+    }
+  }
+}
+
+function rect2 (x, y, rx, ry, p) {
+  return imax(
+    isub(iabs(isub(x, ival(p[0]))), rx),
+    isub(iabs(isub(y, ival(p[1]))), ry)
+  );
 }
 
 function crossesZero (interval) {
@@ -109,17 +155,12 @@ function opicut(a, b) {
   )
 }
 
-function iabs (interval) {
-  var l = Math.abs(interval[0])
-  var u = Math.abs(interval[1])
 
-  return [min(l, u), max(l, u)];
-}
 
 function box (translation, lx, ly, ux, uy, ctx, scale, depth, fn) {
   var maxDepth = depth;
   var size = Math.max(ux - lx, uy - ly) * scale
-  if (size < 1) return maxDepth;
+  if (size < 4) return maxDepth;
 
   var midx = middle(lx, ux);
   var midy = middle(ly, uy);
@@ -175,6 +216,27 @@ window.addEventListener('mousemove', function(e) {
   }
 })
 
+function ival(v) {
+  return [v, v]
+}
+
+function ipowsmooth(a, b, k) {
+  k = k || ival(8);
+  a = ipow(a, k);
+  b = ipow(b, k);
+  return ipow(
+    idiv(imul(a, b), iadd(a, b)),
+    idiv(ival(1.0), k)
+  );
+}
+
+function idiv(a, b) {
+  var l = a[0] / b[0];
+  var u = a[1] / b[1];
+  return [min(l, u), max(l, u)]
+}
+
+
 var translation = [0, 0]
 var ctx = fc(function (dt) {
   ctx.clear('black');
@@ -200,17 +262,42 @@ var ctx = fc(function (dt) {
   var uy =  hh;
 
   console.log('maxDepth:', box(translation, lx, ly, ux, uy, ctx, mouse.zoom, 0, function(x, y, translation) {
-    // return rect2(x, y, 75, 50, [translation[0] -25, translation[1] -25])
+
+    // var moving = circle2(x, y, 200, [translation[0] + 50, translation[1] - 10]);//rect2(x, y, 75, 50, [translation[0] -25, translation[1] -25])
+    // var fixed = circle2(x, y, 200, [0, 0])
+
+var fixed = circle2(x, y, 50, ival(0))
+var moving = rect2(x, y, ival(60), ival(60), translation);//circle2(x, y, 100, [translation[0] + 50, translation[1] - 10])
+
+ // return isub(
+ //    ival(1.0),
+ //    iadd(
+ //      idiv(ival(.01), isqr(fixed)),
+ //      idiv(ival(.01), isqr(moving))
+ //    )
+ //  );
+
     return imin(
-      imin(
-        imax(
-          imul(circle2(x, y, 1000, [translation[0] + 50, translation[1] - 10]), [-1, -1]),
-          circle2(x, y, 2000, [translation[0] + 50, translation[1] - 10])
+      imin(fixed, moving),
+      imul(
+        iadd(
+          isub(fixed, ival(10)),
+          moving
         ),
-        circle2(x, y, 8000, [translation[0] + 15, translation[1] - 70])
-      ),
-      rect2(x, y, 200, 10, [translation[0], translation[1]])
-    )
+        isqrt(ival(0.5))
+      )
+    );
+
+    // return imin(
+    //   imin(
+    //     imax(
+    //       imul(circle2(x, y, 1000, [translation[0] + 50, translation[1] - 10]), [-1, -1]),
+    //       circle2(x, y, 2000, [translation[0] + 50, translation[1] - 10])
+    //     ),
+    //     circle2(x, y, 8000, [translation[0] + 15, translation[1] - 70])
+    //   ),
+    //   rect2(x, y, 200, 10, [translation[0], translation[1]])
+    // )
   }));
 
   ctx.strokeStyle = "#f0f"
