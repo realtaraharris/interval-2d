@@ -187,8 +187,8 @@ window.addEventListener('mousedown', function(e) { mouse.down = [e.clientX, e.cl
 window.addEventListener('mouseup', function(e) { mouse.down = false; })
 window.addEventListener('mousemove', function(e) {
   if (mouse.down) {
-    mouse.translate[0] += (e.clientX - mouse.down[0])
-    mouse.translate[1] += (e.clientY - mouse.down[1])
+    mouse.translate[0] += (e.clientX - mouse.down[0]) / mouse.zoom;
+    mouse.translate[1] += (e.clientY - mouse.down[1]) / mouse.zoom;
     mouse.down[0] = e.clientX;
     mouse.down[1] = e.clientY;
     ctx.dirty()
@@ -204,8 +204,8 @@ var ctx = fc(function (dt) {
   ctx.scale(mouse.zoom, mouse.zoom)
   ctx.lineWidth = 1/mouse.zoom
 
-  translation[0] = mouse.translate[0] / mouse.zoom;
-  translation[1] = mouse.translate[1] / mouse.zoom;
+  translation[0] = mouse.translate[0];
+  translation[1] = mouse.translate[1];
 
   var maspect = max(ctx.canvas.height, ctx.canvas.width);
   var hw = (maspect / 2) / mouse.zoom;
