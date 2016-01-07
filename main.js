@@ -125,6 +125,43 @@ function rect (x, y, rx, ry, p) {
   );
 }
 
+function triangle (x, y, w, h) {
+  return imax(
+    isub(
+      imul(
+        isub(x, ival(1.5)),
+        isub(ival(1.5), ival(1.5))
+      ),
+      imul(
+        isub(y, ival(1.5)),
+        isub(ival(0.5), ival(1.5))
+      )
+    ),
+    imax(
+      isub(
+        imul(
+          isub(x, ival(0.5)),
+          isub(ival(0.5), ival(1.5))
+        ),
+        imul(
+          isub(y, ival(1.5)),
+          isub(ival(1.5), ival(0.5))
+        )
+      ),
+      isub(
+        imul(
+          isub(x, ival(1.5)),
+          isub(ival(1.5), ival(0.5))
+        ),
+        imul(
+          isub(y, ival(0.5)),
+          isub(ival(1.5), ival(1.5))
+        )
+      )
+    )
+  );
+}
+
 function opicut(a, b) {
   var la = -a[0];
   var ua = -a[1];
