@@ -104,7 +104,7 @@ function idiv(a, b) {
 }
 
 function crossesZero (interval) {
-  return 0 >= interval[0] && 0 < interval[1];
+  return 0 >= interval[0] && 0 <= interval[1];
 }
 
 function middle (l, u) {
@@ -134,39 +134,66 @@ function opicut(a, b) {
   )
 }
 
+function inout(ctx, r, ix, iy) {
+  ctx.save()
+
+    if (r[0] < 0 && r[1] < 0) {
+      ctx.fillStyle = "hsla(14, 100%, 55%, .75)"
+    } else {
+      ctx.fillStyle = "#112"
+    }
+    ctx.fillRect(ix[0], iy[0], (ix[1] - ix[0]), (iy[1] - iy[0]));
+
+  ctx.restore();
+
+  return r;
+}
+
 var scratchx = [0, 0];
 var scratchy = [0, 0];
 function box (translation, lx, ly, ux, uy, ctx, scale, depth, fn) {
   var maxDepth = depth;
   var size = Math.max(ux - lx, uy - ly) * scale
-  if (size < 1) return maxDepth;
+  if (size <= 1) {
+    ctx.fillStyle = 'white'
+    ctx.fillRect(Math.floor(lx), Math.floor(ly), Math.ceil(ux - lx), Math.ceil(uy - ly));
+    return maxDepth;
+  }
 
   var midx = middle(lx, ux);
   var midy = middle(ly, uy);
 
-  ctx.strokeRect(lx, ly, (ux - lx), (uy - ly));
-
   iset(scratchx, midx, ux);
   iset(scratchy, midy, uy);
-  if (crossesZero(fn(scratchx, scratchy, translation))) { // upper-right
+  var r = fn(scratchx, scratchy, translation);
+  inout(ctx, r, scratchx, scratchy);
+  if (crossesZero(r)) { // upper-right
     maxDepth = max(maxDepth, box(translation, midx, midy, ux, uy, ctx, scale, depth + 1, fn));
   }
 
   iset(scratchx, lx, midx);
   iset(scratchy, midy, uy);
-  if (crossesZero(fn(scratchx, scratchy, translation))) { // upper-left
+
+  r = fn(scratchx, scratchy, translation);
+  inout(ctx, r, scratchx, scratchy);
+
+  if (crossesZero(r)) { // upper-left
     maxDepth = max(maxDepth, box(translation, lx, midy, midx, uy, ctx, scale, depth + 1, fn));
   }
 
   iset(scratchx, lx, midx);
   iset(scratchy, ly, midy);
-  if (crossesZero(fn(scratchx, scratchy, translation))) { // lower-right
+  r = fn(scratchx, scratchy, translation)
+  inout(ctx, r, scratchx, scratchy);
+  if (crossesZero(r)) { // lower-right
     maxDepth = max(maxDepth, box(translation, lx, ly, midx, midy, ctx, scale, depth + 1, fn));
   }
 
   iset(scratchx, midx, ux);
   iset(scratchy, ly, midy);
-  if (crossesZero(fn(scratchx, scratchy, translation))) { // lower-left
+  r = fn(scratchx, scratchy, translation);
+  inout(ctx, r, scratchx, scratchy);
+  if (crossesZero(r)) { // lower-left
     maxDepth = max(maxDepth, box(translation, midx, ly, ux, midy, ctx, scale, depth + 1, fn));
   }
 
