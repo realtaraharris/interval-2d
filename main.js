@@ -125,38 +125,20 @@ function rect (x, y, rx, ry, p) {
   );
 }
 
-function triangle (x, y, w, h) {
+function triangle (x, y, w, h, translation) {
   return imax(
     isub(
-      imul(
-        isub(x, ival(1.5)),
-        isub(ival(1.5), ival(1.5))
-      ),
-      imul(
-        isub(y, ival(1.5)),
-        isub(ival(0.5), ival(1.5))
-      )
+      imul(isub(x, h), isub(h, h)),
+      imul(isub(y, h), isub(w, h))
     ),
     imax(
       isub(
-        imul(
-          isub(x, ival(0.5)),
-          isub(ival(0.5), ival(1.5))
-        ),
-        imul(
-          isub(y, ival(1.5)),
-          isub(ival(1.5), ival(0.5))
-        )
+        imul(isub(x, w), isub(w, h)),
+        imul(isub(y, h), isub(h, w))
       ),
       isub(
-        imul(
-          isub(x, ival(1.5)),
-          isub(ival(1.5), ival(0.5))
-        ),
-        imul(
-          isub(y, ival(0.5)),
-          isub(ival(1.5), ival(1.5))
-        )
+        imul(isub(x, h), isub(h, w)),
+        imul(isub(y, w), isub(h, h))
       )
     )
   );
@@ -286,6 +268,7 @@ var ctx = fc(function (dt) {
   var uy =  hh;
 
   console.log('maxDepth:', box(translation, lx, ly, ux, uy, ctx, mouse.zoom, 0, function (x, y, translation) {
+    return triangle(x, y, ival(200), ival(-400), [translation[0] + 50, translation[1] - 10]);
     // var moving = circle(x, y, ival(200), [translation[0] + 50, translation[1] - 10]);
     var moving = opicut(
       circle(x, y, ival(40), [translation[0] - 100, translation[1] - 25]),
