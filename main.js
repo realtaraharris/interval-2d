@@ -136,11 +136,14 @@ function opicut(a, b) {
 
 function inout(ctx, r, ix, iy) {
   ctx.save()
+    var size = Math.max(ix[1] - ix[0], iy[1] - iy[0]);
 
     if (r[0] < 0 && r[1] < 0) {
       ctx.fillStyle = "hsla(14, 100%, 55%, .75)"
+    } else if (r[0] <= 0 && r[1] >= 0 && (r[1] - r[0]) < (1 / mouse.zoom)) {
+      ctx.fillStyle = 'white'
     } else {
-      ctx.fillStyle = "#112"
+      ctx.fillStyle = "#000"
     }
     ctx.fillRect(ix[0], iy[0], (ix[1] - ix[0]), (iy[1] - iy[0]));
 
@@ -154,9 +157,8 @@ var scratchy = [0, 0];
 function box (translation, lx, ly, ux, uy, ctx, scale, depth, fn) {
   var maxDepth = depth;
   var size = Math.max(ux - lx, uy - ly) * scale
-  if (size <= 1) {
-    ctx.fillStyle = 'white'
-    ctx.fillRect(Math.floor(lx), Math.floor(ly), Math.ceil(ux - lx), Math.ceil(uy - ly));
+
+  if (size < 1) {
     return maxDepth;
   }
 
@@ -248,8 +250,15 @@ var ctx = fc(function (dt) {
 
   console.log('maxDepth:', box(translation, lx, ly, ux, uy, ctx, mouse.zoom, 0, function (x, y, translation) {
     // var moving = circle(x, y, ival(200), [translation[0] + 50, translation[1] - 10]);
-    var moving = rect(x, y, ival(75), ival(50), [translation[0] - 25, translation[1] - 25]);
-    var fixed = circle(x, y, ival(200), [0, 0]);
+    var moving = opicut(
+      circle(x, y, ival(40), [translation[0] - 100, translation[1] - 25]),
+      rect(x, y, ival(75), ival(50), [translation[0] - 100, translation[1] - 25])
+    );
+
+    var fixed = opicut(
+      circle(x, y, ival(75), [0, 0]),
+      circle(x, y, ival(100), [0, 0])
+    );
 
     // var fixed = circle(x, y, ival(50), ival(0));
     // var moving = rect(x, y, ival(10), ival(60), translation);
@@ -263,21 +272,21 @@ var ctx = fc(function (dt) {
     //   )
     // );
 
-    return imax(
-      imul(moving, ival(-1)),
-      fixed
-    )
+    // return imax(
+    //   imul(moving, ival(-1)),
+    //   fixed
+    // )
 
-    // return imin(
-    //   imin(fixed, moving),
-    //   imul(
-    //     iadd(
-    //       isub(fixed, ival(500)),
-    //       moving
-    //     ),
-    //     isqrt(ival(0.5))
-    //   )
-    // );
+    return imin(
+      imin(fixed, moving),
+      imul(
+        iadd(
+          isub(fixed, ival(10)),
+          moving
+        ),
+        isqrt(ival(0.5))
+      )
+    );
 
     // return imin(
     //   imax(
