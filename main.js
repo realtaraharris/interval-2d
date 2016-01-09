@@ -173,7 +173,7 @@ function inout(ctx, r, ix, iy) {
 
 var scratchx = [0, 0];
 var scratchy = [0, 0];
-function box (translation, lx, ly, ux, uy, ctx, scale, depth, fn) {
+function box (inputShapes, translation, lx, ly, ux, uy, ctx, scale, depth, fn) {
   var maxDepth = depth;
   var size = Math.max(ux - lx, uy - ly) * scale
 
@@ -183,39 +183,51 @@ function box (translation, lx, ly, ux, uy, ctx, scale, depth, fn) {
 
   var midx = middle(lx, ux);
   var midy = middle(ly, uy);
+  var r;
 
   iset(scratchx, midx, ux);
   iset(scratchy, midy, uy);
-  var r = fn(scratchx, scratchy, translation);
+
+  var upperRightShapes = []
+  r = fn(inputShapes, scratchx, scratchy, translation, upperRightShapes);
   inout(ctx, r, scratchx, scratchy);
   if (crossesZero(r)) { // upper-right
-    maxDepth = max(maxDepth, box(translation, midx, midy, ux, uy, ctx, scale, depth + 1, fn));
+    maxDepth = max(maxDepth,
+      box(upperRightShapes, translation, midx, midy, ux, uy, ctx, scale, depth + 1, fn)
+    );
   }
 
   iset(scratchx, lx, midx);
   iset(scratchy, midy, uy);
-
-  r = fn(scratchx, scratchy, translation);
+  var upperLeftShapes = []
+  r = fn(inputShapes, scratchx, scratchy, translation, upperLeftShapes);
   inout(ctx, r, scratchx, scratchy);
-
   if (crossesZero(r)) { // upper-left
-    maxDepth = max(maxDepth, box(translation, lx, midy, midx, uy, ctx, scale, depth + 1, fn));
+    maxDepth = max(maxDepth,
+      box(upperLeftShapes, translation, lx, midy, midx, uy, ctx, scale, depth + 1, fn)
+    );
   }
 
   iset(scratchx, lx, midx);
   iset(scratchy, ly, midy);
-  r = fn(scratchx, scratchy, translation)
+  var lowerRightShapes = [];
+  r = fn(inputShapes, scratchx, scratchy, translation, lowerRightShapes);
   inout(ctx, r, scratchx, scratchy);
   if (crossesZero(r)) { // lower-right
-    maxDepth = max(maxDepth, box(translation, lx, ly, midx, midy, ctx, scale, depth + 1, fn));
+    maxDepth = max(maxDepth,
+      box(lowerRightShapes, translation, lx, ly, midx, midy, ctx, scale, depth + 1, fn)
+    );
   }
 
   iset(scratchx, midx, ux);
   iset(scratchy, ly, midy);
-  r = fn(scratchx, scratchy, translation);
+  var lowerLeftShapes = [];
+  r = fn(inputShapes, scratchx, scratchy, translation, lowerLeftShapes);
   inout(ctx, r, scratchx, scratchy);
   if (crossesZero(r)) { // lower-left
-    maxDepth = max(maxDepth, box(translation, midx, ly, ux, midy, ctx, scale, depth + 1, fn));
+    maxDepth = max(maxDepth,
+      box(lowerLeftShapes, translation, midx, ly, ux, midy, ctx, scale, depth + 1, fn)
+    );
   }
 
   return maxDepth;
@@ -232,22 +244,26 @@ window.addEventListener('mousewheel', function(e) {
 })
 
 window.addEventListener('mousedown', function(e) { mouse.down = [e.clientX, e.clientY]; })
-window.addEventListener('mouseup', function(e) { mouse.down = false; })
+window.addEventListener('mouseup', function(e) {
+  mouse.down = false;
+  var s = [
+    (e.clientX - ctx.canvas.width / 2) / mouse.zoom,
+    (e.clientY - ctx.canvas.height / 2) / mouse.zoom,
+    10
+  ];
+
+  shapes.push(s);
+  ctx.dirty()
+})
 window.addEventListener('mousemove', function(e) {
   if (mouse.down) {
-
     var s = [
-      (e.clientX - ctx.canvas.width / 2),
-      (e.clientY - ctx.canvas.height / 2),
+      (e.clientX - ctx.canvas.width / 2) / mouse.zoom,
+      (e.clientY - ctx.canvas.height / 2) / mouse.zoom,
       10
     ];
 
     shapes.push(s);
-    // mouse.translate[0] += (e.clientX - mouse.down[0]) / mouse.zoom;
-    // mouse.translate[1] += (e.clientY - mouse.down[1]) / mouse.zoom;
-    // mouse.down[0] = e.clientX;
-    // mouse.down[1] = e.clientY;
-    // ctx.dirty()
     ctx.dirty()
   }
 })
@@ -256,6 +272,7 @@ var shapes = [[0, 0, 10]]
 
 var translation = [0, 0]
 var ctx = fc(function (dt) {
+console.clear()
   console.log('rendering', shapes.length, 'shapes')
   console.time('render')
   ctx.clear('black');
@@ -280,76 +297,26 @@ var ctx = fc(function (dt) {
   var ux =  hw;
   var uy =  hh;
 
-  console.log('maxDepth:', box(translation, lx, ly, ux, uy, ctx, mouse.zoom, 0, function (x, y, translation) {
+  function evaluateScene (inputShapes, x, y, translation, outFilteredShapes) {
+    var r = inputShapes.reduce(function(p, c) {
+      var distanceInterval = circle(x, y, ival(c[2]), [
+        translation[0] + c[0],
+        translation[1] + c[1]
+      ]);
 
-    var r = shapes.reduce(function(p, c) {
-      return imin(
-        circle(x, y, ival(c[2]), [translation[0] + c[0], translation[1] + c[1]]),
-        p
-      )
+      if (crossesZero(distanceInterval)) {
+        outFilteredShapes.push(c)
+      }
 
-      return [100, 100]
+      return imin(distanceInterval, p);
     }, ival(1))
 
+    // console.log('filtered shapes length', filteredShapes.length)
+
     return r;
+  }
 
-
-    // var fixed = imin(
-    //   triangle(x, y, ival(50), ival(100), [translation[0] + 50, translation[1] - 10]),
-    //   circle(x, y, ival(20), [translation[0] + 50, translation[1] - 10])
-    // )
-
-    // var fixed = triangle(x, y, ival(50), ival(-100), [translation[0] + 50, translation[1] - 10])
-
-    // var moving = opicut(
-    //   circle(x, y, ival(40), [translation[0] - 100, translation[1] - 25]),
-    //   rect(x, y, ival(75), ival(50), [translation[0] - 100, translation[1] - 25])
-    // );
-
-    // var fixed = opicut(
-    //   circle(x, y, ival(75), [0, 0]),
-    //   circle(x, y, ival(100), [0, 0])
-    // );
-
-    // var fixed = circle(x, y, ival(50), ival(0));
-    // var moving = rect(x, y, ival(10), ival(60), translation);
-    // var moving = circle(x, y, ival(100), [translation[0] + 50, translation[1] - 10]);
-
-    // return isub(
-    //   ival(1.0),
-    //   iadd(
-    //     idiv(ival(.01), isqr(fixed)),
-    //     idiv(ival(.01), isqr(moving))
-    //   )
-    // );
-
-    // return imax(
-    //   imul(moving, ival(-1)),
-    //   fixed
-    // )
-
-    return imin(
-      imin(fixed, moving),
-      imul(
-        iadd(
-          isub(fixed, ival(10 * mouse.zoom)),
-          moving
-        ),
-        isqrt(ival(0.5))
-      )
-    );
-
-    // return imin(
-    //   imax(
-    //     imax(
-    //       imul(circle(x, y, ival(180), [translation[0] + 50, translation[1] - 10]), ival(-1)),
-    //       circle(x, y, ival(200), [translation[0] + 50, translation[1] - 10])
-    //     ),
-    //     circle(x, y, ival(800), [translation[0] + 15, translation[1] - 70])
-    //   ),
-    //   rect(x, y, ival(200), ival(10), [translation[0] + 250, translation[1] + 180])
-    // );
-  }));
+  box(shapes, translation, lx, ly, ux, uy, ctx, mouse.zoom, 0, evaluateScene);
 
   ctx.strokeStyle = "#f0f"
   ctx.strokeRect(lx, ly, ux - lx, uy - ly);
