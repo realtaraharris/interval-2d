@@ -272,6 +272,12 @@ window.addEventListener('mousemove', function(e) {
 
 var shapes = [[0, 0, 10]]
 
+for (var x = -500; x<=500; x+=20) {
+  for (var y = -200; y<=200; y+=20) {
+    shapes.push([x, y, 10])
+  }
+}
+
 var translation = [0, 0]
 var ctx = fc(function (dt) {
   ctx.clear('black');
