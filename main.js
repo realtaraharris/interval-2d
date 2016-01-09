@@ -274,10 +274,15 @@ var shapes = [[0, 0, 10]]
 
 var translation = [0, 0]
 var ctx = fc(function (dt) {
+  ctx.clear('black');
+
+  ctx.fillStyle = "white";
+  ctx.font = "12px monospace"
+  ctx.fillText('shapes: ' + shapes.length, 10, 20);
+
 console.clear()
   console.log('rendering', shapes.length, 'shapes')
   console.time('render')
-  ctx.clear('black');
   ctx.strokeStyle = 'rgba(255,5,5, 0.25)';
   center(ctx);
   // ctx.translate(mouse.translate[0], mouse.translate[1]);
