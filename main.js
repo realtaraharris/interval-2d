@@ -235,13 +235,24 @@ window.addEventListener('mousedown', function(e) { mouse.down = [e.clientX, e.cl
 window.addEventListener('mouseup', function(e) { mouse.down = false; })
 window.addEventListener('mousemove', function(e) {
   if (mouse.down) {
-    mouse.translate[0] += (e.clientX - mouse.down[0]) / mouse.zoom;
-    mouse.translate[1] += (e.clientY - mouse.down[1]) / mouse.zoom;
-    mouse.down[0] = e.clientX;
-    mouse.down[1] = e.clientY;
+
+    var s = [
+      (e.clientX - ctx.canvas.width / 2),
+      (e.clientY - ctx.canvas.height / 2),
+      10
+    ];
+
+    shapes.push(s);
+    // mouse.translate[0] += (e.clientX - mouse.down[0]) / mouse.zoom;
+    // mouse.translate[1] += (e.clientY - mouse.down[1]) / mouse.zoom;
+    // mouse.down[0] = e.clientX;
+    // mouse.down[1] = e.clientY;
+    // ctx.dirty()
     ctx.dirty()
   }
 })
+
+var shapes = [[0, 0, 10]]
 
 var translation = [0, 0]
 var ctx = fc(function (dt) {
@@ -268,17 +279,35 @@ var ctx = fc(function (dt) {
   var uy =  hh;
 
   console.log('maxDepth:', box(translation, lx, ly, ux, uy, ctx, mouse.zoom, 0, function (x, y, translation) {
-    return triangle(x, y, ival(200), ival(-400), [translation[0] + 50, translation[1] - 10]);
-    // var moving = circle(x, y, ival(200), [translation[0] + 50, translation[1] - 10]);
-    var moving = opicut(
-      circle(x, y, ival(40), [translation[0] - 100, translation[1] - 25]),
-      rect(x, y, ival(75), ival(50), [translation[0] - 100, translation[1] - 25])
-    );
 
-    var fixed = opicut(
-      circle(x, y, ival(75), [0, 0]),
-      circle(x, y, ival(100), [0, 0])
-    );
+    var r = shapes.reduce(function(p, c) {
+      return imin(
+        circle(x, y, ival(c[2]), [translation[0] + c[0], translation[1] + c[1]]),
+        p
+      )
+
+      return [100, 100]
+    }, ival(1))
+
+    return r;
+
+
+    // var fixed = imin(
+    //   triangle(x, y, ival(50), ival(100), [translation[0] + 50, translation[1] - 10]),
+    //   circle(x, y, ival(20), [translation[0] + 50, translation[1] - 10])
+    // )
+
+    // var fixed = triangle(x, y, ival(50), ival(-100), [translation[0] + 50, translation[1] - 10])
+
+    // var moving = opicut(
+    //   circle(x, y, ival(40), [translation[0] - 100, translation[1] - 25]),
+    //   rect(x, y, ival(75), ival(50), [translation[0] - 100, translation[1] - 25])
+    // );
+
+    // var fixed = opicut(
+    //   circle(x, y, ival(75), [0, 0]),
+    //   circle(x, y, ival(100), [0, 0])
+    // );
 
     // var fixed = circle(x, y, ival(50), ival(0));
     // var moving = rect(x, y, ival(10), ival(60), translation);
@@ -301,7 +330,7 @@ var ctx = fc(function (dt) {
       imin(fixed, moving),
       imul(
         iadd(
-          isub(fixed, ival(10)),
+          isub(fixed, ival(10 * mouse.zoom)),
           moving
         ),
         isqrt(ival(0.5))
