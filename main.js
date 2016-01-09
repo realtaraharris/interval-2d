@@ -158,10 +158,12 @@ function inout(ctx, r, ix, iy) {
     var size = Math.max(ix[1] - ix[0], iy[1] - iy[0]);
 
     if (r[0] < 0 && r[1] < 0) {
+      return r;
       ctx.fillStyle = "hsla(14, 100%, 55%, .75)"
-    } else if (r[0] <= 0 && r[1] >= 0 && (r[1] - r[0]) < (1 / mouse.zoom)) {
+    } else if (r[0] <= 0 && r[1] >= 0 && size < (1 / mouse.zoom)) {
       ctx.fillStyle = 'white'
     } else {
+      return r;
       ctx.fillStyle = "#000"
     }
     ctx.fillRect(ix[0], iy[0], (ix[1] - ix[0]), (iy[1] - iy[0]));
