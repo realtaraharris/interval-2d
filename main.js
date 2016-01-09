@@ -191,7 +191,7 @@ function box (inputShapes, translation, lx, ly, ux, uy, ctx, scale, depth, fn) {
   iset(scratchy, midy, uy);
 
   var upperRightShapes = []
-  r = fn(inputShapes, scratchx, scratchy, translation, upperRightShapes);
+  r = fn(depth, inputShapes, scratchx, scratchy, translation, upperRightShapes);
   inout(ctx, r, scratchx, scratchy);
   if (crossesZero(r)) { // upper-right
     maxDepth = max(maxDepth,
@@ -202,7 +202,7 @@ function box (inputShapes, translation, lx, ly, ux, uy, ctx, scale, depth, fn) {
   iset(scratchx, lx, midx);
   iset(scratchy, midy, uy);
   var upperLeftShapes = []
-  r = fn(inputShapes, scratchx, scratchy, translation, upperLeftShapes);
+  r = fn(depth, inputShapes, scratchx, scratchy, translation, upperLeftShapes);
   inout(ctx, r, scratchx, scratchy);
   if (crossesZero(r)) { // upper-left
     maxDepth = max(maxDepth,
@@ -213,7 +213,7 @@ function box (inputShapes, translation, lx, ly, ux, uy, ctx, scale, depth, fn) {
   iset(scratchx, lx, midx);
   iset(scratchy, ly, midy);
   var lowerRightShapes = [];
-  r = fn(inputShapes, scratchx, scratchy, translation, lowerRightShapes);
+  r = fn(depth, inputShapes, scratchx, scratchy, translation, lowerRightShapes);
   inout(ctx, r, scratchx, scratchy);
   if (crossesZero(r)) { // lower-right
     maxDepth = max(maxDepth,
@@ -224,7 +224,7 @@ function box (inputShapes, translation, lx, ly, ux, uy, ctx, scale, depth, fn) {
   iset(scratchx, midx, ux);
   iset(scratchy, ly, midy);
   var lowerLeftShapes = [];
-  r = fn(inputShapes, scratchx, scratchy, translation, lowerLeftShapes);
+  r = fn(depth, inputShapes, scratchx, scratchy, translation, lowerLeftShapes);
   inout(ctx, r, scratchx, scratchy);
   if (crossesZero(r)) { // lower-left
     maxDepth = max(maxDepth,
@@ -295,14 +295,15 @@ var ctx = fc(function (dt) {
   ctx.clear('black');
 
   var localShapes = []
-  evaluateScene(shapes, [lx, ux], [ly, uy], translation, localShapes)
+  var groups = [[], [], [], [], [], [], [], [], [], [], []];
+  evaluateScene(0, shapes, [lx, ux], [ly, uy], translation, localShapes)
 
 
   ctx.fillStyle = "white";
   ctx.font = "12px monospace"
   ctx.fillText('shapes: ' + localShapes.length + '/' + shapes.length, 10, 20);
 
-console.clear()
+  console.clear()
   console.time('render')
   ctx.strokeStyle = 'rgba(255,5,5, 0.25)';
   center(ctx);
@@ -310,8 +311,9 @@ console.clear()
   ctx.scale(mouse.zoom, mouse.zoom)
   ctx.lineWidth = 1/mouse.zoom
 
+  function evaluateScene (depth, inputShapes, x, y, translation, outFilteredShapes) {
+    groups[depth].push(inputShapes.length)
 
-  function evaluateScene (inputShapes, x, y, translation, outFilteredShapes) {
     var l = inputShapes.length;
     var r = ival(1);
     var st = [0, 0];
@@ -333,6 +335,15 @@ console.clear()
   }
 
   box(shapes, translation, lx, ly, ux, uy, ctx, mouse.zoom, 0, evaluateScene);
+
+  groups.forEach(function(group, i) {
+    var sum = group.reduce(function(p, c) {
+      return p + c
+    }, 0)
+
+    var avg = sum / group.length
+    console.log('depth: %s; cells: %s; avg work: %s; total work: %s', i, group.length, (avg).toFixed(2), sum)
+  })
 
   ctx.strokeStyle = "#f0f"
   ctx.strokeRect(lx, ly, ux - lx, uy - ly);
