@@ -256,6 +256,8 @@ var shapes = [[0, 0, 10]]
 
 var translation = [0, 0]
 var ctx = fc(function (dt) {
+  console.log('rendering', shapes.length, 'shapes')
+  console.time('render')
   ctx.clear('black');
   ctx.strokeStyle = 'rgba(255,5,5, 0.25)';
   center(ctx);
@@ -351,4 +353,5 @@ var ctx = fc(function (dt) {
 
   ctx.strokeStyle = "#f0f"
   ctx.strokeRect(lx, ly, ux - lx, uy - ly);
+  console.timeEnd('render')
 }, false);
