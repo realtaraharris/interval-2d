@@ -300,7 +300,10 @@ console.clear()
   var uy =  hh;
 
   function evaluateScene (inputShapes, x, y, translation, outFilteredShapes) {
-    var r = inputShapes.reduce(function(p, c) {
+    var l = inputShapes.length;
+    var r = ival(1);
+    for (var i=0; i<l; i++) {
+      var c = inputShapes[i];
       var distanceInterval = circle(x, y, ival(c[2]), [
         translation[0] + c[0],
         translation[1] + c[1]
@@ -310,11 +313,8 @@ console.clear()
         outFilteredShapes.push(c)
       }
 
-      return imin(distanceInterval, p);
-    }, ival(1))
-
-    // console.log('filtered shapes length', filteredShapes.length)
-
+      imin(distanceInterval, r, r);
+    }
     return r;
   }
 
