@@ -280,14 +280,29 @@ for (var x = -500; x<=500; x+=20) {
 
 var translation = [0, 0]
 var ctx = fc(function (dt) {
+  var maspect = max(ctx.canvas.height, ctx.canvas.width);
+  var hw = (maspect / 2) / mouse.zoom;
+  var hh = (maspect / 2) / mouse.zoom;
+
+  var lx = -hw;
+  var ly = -hh;
+  var ux =  hw;
+  var uy =  hh;
+
+  translation[0] = mouse.translate[0];
+  translation[1] = mouse.translate[1];
+
   ctx.clear('black');
+
+  var localShapes = []
+  evaluateScene(shapes, [lx, ux], [ly, uy], translation, localShapes)
+
 
   ctx.fillStyle = "white";
   ctx.font = "12px monospace"
-  ctx.fillText('shapes: ' + shapes.length, 10, 20);
+  ctx.fillText('shapes: ' + localShapes.length + '/' + shapes.length, 10, 20);
 
 console.clear()
-  console.log('rendering', shapes.length, 'shapes')
   console.time('render')
   ctx.strokeStyle = 'rgba(255,5,5, 0.25)';
   center(ctx);
@@ -295,30 +310,18 @@ console.clear()
   ctx.scale(mouse.zoom, mouse.zoom)
   ctx.lineWidth = 1/mouse.zoom
 
-  translation[0] = mouse.translate[0];
-  translation[1] = mouse.translate[1];
-
-  var maspect = max(ctx.canvas.height, ctx.canvas.width);
-  var hw = (maspect / 2) / mouse.zoom;
-  var hh = (maspect / 2) / mouse.zoom;
-
-  var cx = mouse.translate[0];
-  var cy = mouse.translate[1];
-
-  var lx = -hw;
-  var ly = -hh;
-  var ux =  hw;
-  var uy =  hh;
 
   function evaluateScene (inputShapes, x, y, translation, outFilteredShapes) {
     var l = inputShapes.length;
     var r = ival(1);
+    var st = [0, 0];
     for (var i=0; i<l; i++) {
       var c = inputShapes[i];
-      var distanceInterval = circle(x, y, ival(c[2]), [
-        translation[0] + c[0],
-        translation[1] + c[1]
-      ]);
+
+      st[0] = translation[0] + c[0];
+      st[1] = translation[1] + c[1];
+
+      var distanceInterval = circle(x, y, ival(c[2]), st)
 
       if (crossesZero(distanceInterval)) {
         outFilteredShapes.push(c)
