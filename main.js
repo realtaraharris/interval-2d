@@ -1,4 +1,7 @@
 var fc = require('fc');
+var glm = require('gl-matrix');
+var mat3 = glm.mat3;
+var vec2 = glm.vec2;
 var center = require('ctx-translate-center')
 var iadd = require('interval-add');
 var isub = require('interval-subtract');
@@ -118,11 +121,8 @@ function circle (x, y, r, translation) {
   return isub(ilen(lx, ly), r);
 }
 
-function rect (x, y, rx, ry, p) {
-  return imax(
-    isub(iabs(isub(x, ival(p[0]))), rx),
-    isub(iabs(isub(y, ival(p[1]))), ry)
-  );
+function rect (x, y, rx, ry) {
+  return imax(isub(iabs(x), rx), isub(iabs(y), ry));
 }
 
 function triangle (x, y, w, h, translation) {
@@ -248,37 +248,64 @@ window.addEventListener('mousewheel', function(e) {
 window.addEventListener('mousedown', function(e) { mouse.down = [e.clientX, e.clientY]; })
 window.addEventListener('mouseup', function(e) {
   mouse.down = false;
-  var s = [
+  addShape(
     (e.clientX - ctx.canvas.width / 2) / mouse.zoom,
     (e.clientY - ctx.canvas.height / 2) / mouse.zoom,
-    10
-  ];
-
-  shapes.push(s);
-  ctx.dirty()
+    10,
+    Math.random() * 100
+  );
 })
 window.addEventListener('mousemove', function(e) {
   if (mouse.down) {
-    var s = [
+    addShape(
       (e.clientX - ctx.canvas.width / 2) / mouse.zoom,
       (e.clientY - ctx.canvas.height / 2) / mouse.zoom,
-      10
-    ];
-
-    shapes.push(s);
-    ctx.dirty()
+      10,
+      Math.random() * 100
+    );
   }
 })
 
-var shapes = []; // [0, 0, 10]]
+function addShape(cx, cy, width, height) {
 
-for (var x = -500; x<=500; x+=20) {
-  for (var y = -200; y<=200; y+=20) {
-    shapes.push([x, y, 10])
-  }
+  var transform = mat3.create();
+  mat3.translate(transform, transform, [cx, cy])
+
+  shapes.push({
+    fn: rect,
+    width: ival(width),
+    height: ival(height),
+    transform: transform
+  })
+
+  ctx && ctx.dirty()
+
 }
 
-var translation = [0, 0]
+var shapes = [];
+
+addShape(10, 10, 10, 50)
+addShape(100, 100, 10, 50)
+
+// for (var x = -500; x<=500; x+=20) {
+//   for (var y = -200; y<=200; y+=20) {
+//     shapes.push([x, y, 10])
+//   }
+// }
+
+setInterval(function() {
+  mat3.rotate(shapes[0].transform, shapes[0].transform, Math.PI/100)
+  var s = 1 - Math.sin(Date.now() / 1000) / 50;
+  mat3.scale(shapes[0].transform, shapes[0].transform, [s, s])
+
+  ctx.dirty()
+}, 16);
+
+
+
+var translation = [0, 0];
+var inverted = mat3.create();
+
 var ctx = fc(function (dt) {
   var maspect = max(ctx.canvas.height, ctx.canvas.width);
   var hw = (maspect / 2) / mouse.zoom;
@@ -320,10 +347,26 @@ var ctx = fc(function (dt) {
     for (var i=0; i<l; i++) {
       var c = inputShapes[i];
 
-      st[0] = translation[0] + c[0];
-      st[1] = translation[1] + c[1];
+      mat3.translate(inverted, c.transform, translation);
+      mat3.invert(inverted, inverted);
 
-      var distanceInterval = circle(x, y, ival(c[2]), st)
+      var vll = [x[0], y[0]];
+      var vlu = [x[0], y[1]];
+      var vul = [x[1], y[0]];
+      var vuu = [x[1], y[1]];
+
+      vec2.transformMat3(vll, vll, inverted);
+      vec2.transformMat3(vlu, vlu, inverted);
+      vec2.transformMat3(vul, vul, inverted);
+      vec2.transformMat3(vuu, vuu, inverted);
+
+      var distanceInterval = c.fn(
+        [min(vll[0], vlu[0], vul[0], vuu[0]), max(vll[0], vlu[0], vul[0], vuu[0])],
+        [min(vll[1], vlu[1], vul[1], vuu[1]), max(vll[1], vlu[1], vul[1], vuu[1])],
+        // TODO: compress these into a generic property that gets passed into every shape
+        c.width,
+        c.height
+      );
 
       if (crossesZero(distanceInterval)) {
         outFilteredShapes.push(c)
