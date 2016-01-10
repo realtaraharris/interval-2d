@@ -269,7 +269,7 @@ var mouse = {
   debug: false
 }
 
-window.addEventListener('mousewheel', function(e) {
+window.addEventListener('mousewheel', function mousewheel (e) {
   ctx.dirty();
   mouse.zoom += e.wheelDelta / 500;
   if (mouse.zoom < .1) {
@@ -280,12 +280,12 @@ window.addEventListener('mousewheel', function(e) {
   e.preventDefault();
 })
 
-window.addEventListener('mousedown', function(e) { mouse.down = [e.clientX, e.clientY]; })
-window.addEventListener('mouseup', function(e) {
+window.addEventListener('mousedown', function mousedown (e) { mouse.down = [e.clientX, e.clientY]; })
+window.addEventListener('mouseup', function mouseup (e) {
   mouse.down = false;
   addShape(mouse.pos[0], mouse.pos[1]);
 })
-window.addEventListener('mousemove', function(e) {
+window.addEventListener('mousemove', function mousemove (e) {
   mouse.pos[0] = (e.clientX - ctx.canvas.width / 2) / mouse.zoom - mouse.translate[0];
   mouse.pos[1] = (e.clientY - ctx.canvas.height / 2) / mouse.zoom - mouse.translate[1];
 
@@ -297,7 +297,7 @@ window.addEventListener('mousemove', function(e) {
 
 
 var keyboard = { shape: circle, radius: 10 }
-window.addEventListener('keydown', function(e) {
+window.addEventListener('keydown', function keydown (e) {
   keyboard[e.which] = true;
   ctx.dirty()
   // r
@@ -316,7 +316,7 @@ window.addEventListener('keydown', function(e) {
     keyboard.radius -= 1/mouse.zoom;
   }
 })
-window.addEventListener('keyup', function(e) {
+window.addEventListener('keyup', function keyup (e) {
   keyboard[e.which] = false;
 
   if (e.which == 68) {
@@ -366,7 +366,7 @@ var shapes = [];
 var translation = [0, 0];
 var inverted = mat3.create();
 
-var ctx = fc(function (dt) {
+var ctx = fc(function tick (dt) {
   ctx.save()
   var hw = (ctx.canvas.width / 2) / mouse.zoom;
   var hh = (ctx.canvas.height / 2) / mouse.zoom;
