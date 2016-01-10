@@ -126,7 +126,7 @@ function circle (x, y, r) {
 
 circle.helper = function circleHelper(ctx) {
   ctx.beginPath()
-    drawCircle(ctx, mouse.pos[0], mouse.pos[1], keyboard.radius / mouse.zoom);
+    drawCircle(ctx, mouse.pos[0], mouse.pos[1], keyboard.radius);
     ctx.strokeStyle = "#FF0073"
     ctx.stroke();
 }
@@ -137,8 +137,7 @@ function rect (x, y, args) {
 }
 
 rect.helper = function rectHelper(ctx) {
-  var r = keyboard.radius / mouse.zoom;
-  console.log(r);
+  var r = keyboard.radius;
   ctx.strokeStyle = "#FF0073"
   ctx.strokeRect(mouse.pos[0] - r, mouse.pos[1] - r, r*2, r*2);
 }
