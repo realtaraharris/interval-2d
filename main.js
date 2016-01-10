@@ -126,7 +126,7 @@ function circle (x, y, r) {
 
 circle.helper = function circleHelper(ctx) {
   ctx.beginPath()
-    drawCircle(ctx, mouse.pos[0], mouse.pos[1], keyboard.radius);
+    drawCircle(ctx, mouse.pos[0] + mouse.translate[0], mouse.pos[1] + mouse.translate[1], keyboard.radius);
     ctx.strokeStyle = "#FF0073"
     ctx.stroke();
 }
@@ -139,7 +139,12 @@ function rect (x, y, args) {
 rect.helper = function rectHelper(ctx) {
   var r = keyboard.radius;
   ctx.strokeStyle = "#FF0073"
-  ctx.strokeRect(mouse.pos[0] - r, mouse.pos[1] - r, r*2, r*2);
+  ctx.strokeRect(
+    (mouse.pos[0] + mouse.translate[0]) - r,
+    (mouse.pos[1] + mouse.translate[1]) - r,
+    r*2,
+    r*2
+  );
 }
 
 function triangle (x, y, w, h, translation) {
@@ -263,8 +268,8 @@ window.addEventListener('mousewheel', function(e) {
   if (mouse.zoom < .1) {
     mouse.zoom = .1;
   }
-  mouse.pos[0] = (e.clientX - ctx.canvas.width / 2) / mouse.zoom;
-  mouse.pos[1] = (e.clientY - ctx.canvas.height / 2) / mouse.zoom;
+  mouse.pos[0] = (e.clientX - ctx.canvas.width / 2) / mouse.zoom - mouse.translate[0];
+  mouse.pos[1] = (e.clientY - ctx.canvas.height / 2) / mouse.zoom - mouse.translate[1];
   e.preventDefault();
 })
 
