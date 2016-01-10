@@ -310,10 +310,10 @@ window.addEventListener('keydown', function(e) {
 
   // ]
   if (e.which === 221) {
-    keyboard.radius += 1;
+    keyboard.radius += 1/mouse.zoom;
   // [
   } else if (e.which === 219) {
-    keyboard.radius -= 1;
+    keyboard.radius -= 1/mouse.zoom;
   }
 })
 window.addEventListener('keyup', function(e) {
