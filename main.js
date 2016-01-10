@@ -119,15 +119,12 @@ function middle (l, u) {
   return (l + u) * 0.5;
 }
 
-function circle (x, y, r, translation) {
-  var lx = [x[0] - translation[0], x[1] - translation[0]];
-  var ly = [y[0] - translation[1], y[1] - translation[1]];
-
-  return isub(ilen(lx, ly), r);
+function circle (x, y, r) {
+  return isub(ilen(x, y), r[0]);
 }
 
-function rect (x, y, rx, ry) {
-  return imax(isub(iabs(x), rx), isub(iabs(y), ry));
+function rect (x, y, args) {
+  return imax(isub(iabs(x), args[0]), isub(iabs(y), args[1]));
 }
 
 function triangle (x, y, w, h, translation) {
@@ -266,42 +263,58 @@ window.addEventListener('mousewheel', function(e) {
 window.addEventListener('mousedown', function(e) { mouse.down = [e.clientX, e.clientY]; })
 window.addEventListener('mouseup', function(e) {
   mouse.down = false;
-  addShape(mouse.pos[0], mouse.pos[1], 10, Math.random() * 100);
+  addShape(mouse.pos[0], mouse.pos[1]);
 })
 window.addEventListener('mousemove', function(e) {
   mouse.pos[0] = (e.clientX - ctx.canvas.width / 2) / mouse.zoom - mouse.translate[0];
   mouse.pos[1] = (e.clientY - ctx.canvas.height / 2) / mouse.zoom - mouse.translate[1];
 
   if (mouse.down) {
-    addShape(mouse.pos[0], mouse.pos[1], 10, Math.random() * 100);
+    addShape(mouse.pos[0], mouse.pos[1]);
   }
 })
 
 
-var keyboard = {}
+var keyboard = { shape: circle, radius: 10 }
 window.addEventListener('keydown', function(e) {
   keyboard[e.which] = true;
   ctx.dirty()
+  // r
+  if (e.which === 82) {
+    keyboard.shape = rect;
+  // c
+  } else if (e.which === 67) {
+    keyboard.shape = circle;
+  }
+
+  // ]
+  if (e.which === 221) {
+    keyboard.radius += 1;
+  // [
+  } else if (e.which === 219) {
+    keyboard.radius -= 1;
+  }
+
 })
 window.addEventListener('keyup', function(e) {
   keyboard[e.which] = false;
   ctx.dirty()
 })
 
-function addShape(cx, cy, width, height) {
+function addShape(cx, cy) {
 
   var transform = mat3.create();
   mat3.translate(transform, transform, [cx, cy])
 
+  var r = ival(keyboard.radius);
+
   shapes.push({
-    fn: rect,
-    width: ival(width),
-    height: ival(height),
+    fn: keyboard.shape,
+    args: [r, r],
     transform: transform
   })
 
   ctx && ctx.dirty()
-
 }
 
 var shapes = [];
@@ -399,9 +412,7 @@ var ctx = fc(function (dt) {
       var distanceInterval = c.fn(
         [min(vll[0], vlu[0], vul[0], vuu[0]), max(vll[0], vlu[0], vul[0], vuu[0])],
         [min(vll[1], vlu[1], vul[1], vuu[1]), max(vll[1], vlu[1], vul[1], vuu[1])],
-        // TODO: compress these into a generic property that gets passed into every shape
-        c.width,
-        c.height
+        c.args
       );
 
       if (crossesZero(distanceInterval)) {
