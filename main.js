@@ -183,7 +183,7 @@ function inout(ctx, r, ix, iy, depth) {
     ctx.lineWidth = 1/scale;
     var size = Math.max(ix[1] - ix[0], iy[1] - iy[0]);
 
-    if (r[0] <= 0 && r[1] <= 0) {
+    if (keyboard.debug && r[0] <= 0 && r[1] <= 0) {
       ctx.fillStyle = depthColors[depth];//"hsla(14, 100%, 55%, 1)"
       ctx.fillRect(ix[0], iy[0], (ix[1] - ix[0]), (iy[1] - iy[0]));
     } else if (r[0] <= 0 && r[1] >= 0 && size < (1 / mouse.zoom)) {
@@ -261,7 +261,14 @@ function box (inputShapes, translation, lx, ly, ux, uy, ctx, scale, depth, fn) {
   return maxDepth;
 }
 
-var mouse = { zoom: 1, down: false, translate: [0, 0], pos: [0, 0] }
+var mouse = {
+  zoom: 1,
+  down: false,
+  translate: [0, 0],
+  pos: [0, 0],
+  debug: false
+}
+
 window.addEventListener('mousewheel', function(e) {
   ctx.dirty();
   mouse.zoom += e.wheelDelta / 500;
@@ -308,10 +315,14 @@ window.addEventListener('keydown', function(e) {
   } else if (e.which === 219) {
     keyboard.radius -= 1;
   }
-
 })
 window.addEventListener('keyup', function(e) {
   keyboard[e.which] = false;
+
+  if (e.which == 68) {
+    keyboard.debug = !keyboard.debug
+  }
+
   ctx.dirty()
 })
 
