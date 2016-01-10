@@ -22,6 +22,10 @@ function isqr(a) {
   }
 }
 
+function sign(a) {
+  return typeof a === 'number' ? a ? a < 0 ? -1 : 1 : a === a ? 0 : 0 : 0
+}
+
 function ilensq(a, b) {
   var pa = isqr(a)
   var pb = isqr(b)
@@ -156,7 +160,6 @@ function opicut(a, b) {
 
 
 var depthColors = colorLerp('#00FF00', '#FF0000', 10);
-console.log(depthColors)
 function inout(ctx, r, ix, iy, depth) {
   var scale = mouse.zoom;
   ctx.save()
@@ -190,9 +193,6 @@ function inout(ctx, r, ix, iy, depth) {
 var scratchx = [0, 0];
 var scratchy = [0, 0];
 function box (inputShapes, translation, lx, ly, ux, uy, ctx, scale, depth, fn) {
-  ctx.fillStyle = "black";
-  ctx.fillRect(lx, ly, ux-lx, ux-lx);
-
   var maxDepth = depth;
   var size = Math.max(ux - lx, uy - ly) * scale
   if (size < 1) {
@@ -330,9 +330,8 @@ var inverted = mat3.create();
 
 var ctx = fc(function (dt) {
   ctx.save()
-  var maspect = max(ctx.canvas.height, ctx.canvas.width);
-  var hw = (maspect / 2) / mouse.zoom;
-  var hh = (maspect / 2) / mouse.zoom;
+  var hw = (ctx.canvas.width / 2) / mouse.zoom;
+  var hh = (ctx.canvas.height / 2) / mouse.zoom;
 
   var lx = -hw;
   var ly = -hh;
@@ -361,10 +360,10 @@ var ctx = fc(function (dt) {
   ctx.clear('black');
 
   var localShapes = []
-  var groups = [[], [], [], [], [], [], [], [], [], [], []];
+  var groups = [];
   evaluateScene(0, shapes, [lx, ux], [ly, uy], translation, localShapes)
 
-  console.clear()
+
   console.time('render')
   ctx.strokeStyle = 'rgba(255,5,5, 0.25)';
   center(ctx);
@@ -373,6 +372,9 @@ var ctx = fc(function (dt) {
   ctx.lineWidth = 1/mouse.zoom
 
   function evaluateScene (depth, inputShapes, x, y, translation, outFilteredShapes) {
+    if (!groups[depth]) {
+      groups.push([]);
+    }
     groups[depth].push(inputShapes.length)
 
     var l = inputShapes.length;
@@ -422,8 +424,6 @@ var ctx = fc(function (dt) {
     console.log('depth: %s; cells: %s; avg work: %s; total work: %s', i, group.length, (avg).toFixed(2), sum)
   })
 
-  ctx.strokeStyle = "#f0f"
-  ctx.strokeRect(lx, ly, ux - lx, uy - ly);
   console.timeEnd('render')
   ctx.restore()
 
