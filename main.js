@@ -282,7 +282,6 @@ var keyboard = {}
 window.addEventListener('keydown', function(e) {
   keyboard[e.which] = true;
   ctx.dirty()
-  e.preventDefault();
 })
 window.addEventListener('keyup', function(e) {
   keyboard[e.which] = false;
