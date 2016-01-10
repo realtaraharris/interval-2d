@@ -349,11 +349,11 @@ var ctx = fc(function (dt) {
   }
 
   if (keyboard[40]) {
-    mouse.translate[1] -= 10 / mouse.zoom;
+    mouse.translate[1] += 10 / mouse.zoom;
   }
 
   if (keyboard[38]) {
-    mouse.translate[1] += 10 / mouse.zoom;
+    mouse.translate[1] -= 10 / mouse.zoom;
   }
 
   translation[0] = mouse.translate[0];
