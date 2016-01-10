@@ -2,7 +2,8 @@ var fc = require('fc');
 var glm = require('gl-matrix');
 var mat3 = glm.mat3;
 var vec2 = glm.vec2;
-var center = require('ctx-translate-center')
+var drawCircle = require('ctx-circle');
+var center = require('ctx-translate-center');
 var iadd = require('interval-add');
 var isub = require('interval-subtract');
 var imul = require('interval-multiply');
@@ -123,8 +124,23 @@ function circle (x, y, r) {
   return isub(ilen(x, y), r[0]);
 }
 
+circle.helper = function circleHelper(ctx) {
+  ctx.beginPath()
+    drawCircle(ctx, mouse.pos[0], mouse.pos[1], keyboard.radius / mouse.zoom);
+    ctx.strokeStyle = "#FF0073"
+    ctx.stroke();
+}
+
+
 function rect (x, y, args) {
   return imax(isub(iabs(x), args[0]), isub(iabs(y), args[1]));
+}
+
+rect.helper = function rectHelper(ctx) {
+  var r = keyboard.radius / mouse.zoom;
+  console.log(r);
+  ctx.strokeStyle = "#FF0073"
+  ctx.strokeRect(mouse.pos[0] - r, mouse.pos[1] - r, r*2, r*2);
 }
 
 function triangle (x, y, w, h, translation) {
@@ -164,22 +180,15 @@ function inout(ctx, r, ix, iy, depth) {
     var size = Math.max(ix[1] - ix[0], iy[1] - iy[0]);
 
     if (r[0] <= 0 && r[1] <= 0) {
-      // return r;
       ctx.fillStyle = depthColors[depth];//"hsla(14, 100%, 55%, 1)"
       ctx.fillRect(ix[0], iy[0], (ix[1] - ix[0]), (iy[1] - iy[0]));
-
-      r = [10, 10];
-
     } else if (r[0] <= 0 && r[1] >= 0 && size < (1 / mouse.zoom)) {
       ctx.fillStyle = 'white'
-    ctx.fillRect(ix[0]+1/scale, iy[0]+1/scale, (ix[1] - ix[0])-2/scale, (iy[1] - iy[0])-2/scale);
-
+      ctx.fillRect(ix[0]+1/scale, iy[0]+1/scale, (ix[1] - ix[0])-2/scale, (iy[1] - iy[0])-2/scale);
     } else {
-
-      // return r;
       // ctx.strokeStyle = "yellow"
-      ctx.strokeStyle = depthColors[depth];//'rgb(' + Math.floor((depth/10)*255) + ', 0, 0)';
-      ctx.strokeRect(ix[0], iy[0], (ix[1] - ix[0]), (iy[1] - iy[0]));
+      // ctx.strokeStyle = depthColors[depth];//'rgb(' + Math.floor((depth/10)*255) + ', 0, 0)';
+      // ctx.strokeRect(ix[0], iy[0], (ix[1] - ix[0]), (iy[1] - iy[0]));
     }
 
   ctx.restore();
@@ -272,6 +281,7 @@ window.addEventListener('mousemove', function(e) {
   if (mouse.down) {
     addShape(mouse.pos[0], mouse.pos[1]);
   }
+  ctx.dirty();
 })
 
 
@@ -426,17 +436,20 @@ var ctx = fc(function (dt) {
 
   box(shapes, translation, lx, ly, ux, uy, ctx, mouse.zoom, 0, evaluateScene);
 
-  groups.forEach(function(group, i) {
-    var sum = group.reduce(function(p, c) {
-      return p + c
-    }, 0)
+  // groups.forEach(function(group, i) {
+  //   var sum = group.reduce(function(p, c) {
+  //     return p + c
+  //   }, 0)
 
-    var avg = sum / group.length
-    console.log('depth: %s; cells: %s; avg work: %s; total work: %s', i, group.length, (avg).toFixed(2), sum)
-  })
+  //   var avg = sum / group.length
+  //   console.log('depth: %s; cells: %s; avg work: %s; total work: %s', i, group.length, (avg).toFixed(2), sum)
+  // })
 
   console.timeEnd('render')
+
+  keyboard.shape.helper(ctx);
   ctx.restore()
+
 
   ctx.fillStyle = "white";
   ctx.font = "12px monospace"
