@@ -13,6 +13,12 @@ var colorLerp = require('color-lerp');
 var max = Math.max;
 var min = Math.min;
 
+function hsl(h, s, l) {
+  var p = (241 - (h * 241)|0) % 360
+  var r = 'hsl(' + p + ',' + s + '%,' + l + '%)';
+  return r;
+}
+
 function isqr(a) {
   if (a[0]>=0.0) {
     return [a[0] * a[0], a[1] * a[1]]
@@ -176,8 +182,9 @@ function opicut(a, b) {
 }
 
 
-var depthColors = colorLerp('#00FF00', '#FF0000', 10);
-function inout(ctx, r, ix, iy, depth, hit) {
+function inout(ctx, r, ix, iy, work, hit) {
+  var maxWork = shapes.length;
+
   var scale = mouse.zoom;
   ctx.save()
     ctx.lineWidth = 1/scale;
@@ -187,15 +194,11 @@ function inout(ctx, r, ix, iy, depth, hit) {
       ctx.fillStyle = 'green';//"hsla(14, 100%, 55%, 1)"
       ctx.fillRect(ix[0], iy[0], (ix[1] - ix[0]), (iy[1] - iy[0]));
     } else if (keyboard.debug && r[0] <= 0 && r[1] <= 0) {
-      ctx.fillStyle = depthColors[depth];//"hsla(14, 100%, 55%, 1)"
+      ctx.fillStyle = hsl(work / maxWork, 100,  50);
       ctx.fillRect(ix[0], iy[0], (ix[1] - ix[0]), (iy[1] - iy[0]));
     } else if (r[0] <= 0 && r[1] >= 0 && size < (1 / mouse.zoom)) {
       ctx.fillStyle = 'white'
       ctx.fillRect(ix[0]+1/scale, iy[0]+1/scale, (ix[1] - ix[0])-2/scale, (iy[1] - iy[0])-2/scale);
-    } else {
-      // ctx.strokeStyle = "yellow"
-      // ctx.strokeStyle = depthColors[depth];//'rgb(' + Math.floor((depth/10)*255) + ', 0, 0)';
-      // ctx.strokeRect(ix[0], iy[0], (ix[1] - ix[0]), (iy[1] - iy[0]));
     }
 
   ctx.restore();
@@ -207,6 +210,8 @@ var scratchx = [0, 0];
 var scratchy = [0, 0];
 function box (inputShapes, translation, lx, ly, ux, uy, ctx, scale, depth, fn) {
   var maxDepth = depth;
+  var work = inputShapes.length;
+
   var size = Math.max(ux - lx, uy - ly) * scale
   if (size < 1) {
     return maxDepth;
@@ -219,17 +224,8 @@ function box (inputShapes, translation, lx, ly, ux, uy, ctx, scale, depth, fn) {
   iset(scratchx, midx, ux);
   iset(scratchy, midy, uy);
 
-  function checkHit () {
-    for (var i = 0; i < inputShapes.length; i++) {
-      if (clickedShapeIds.indexOf(inputShapes[i].id) > -1) {
-        return true;
-      }
-    }
-  }
-
   var upperRightShapes = []
   r = fn(depth, inputShapes, scratchx, scratchy, translation, upperRightShapes);
-  r = inout(ctx, r, scratchx, scratchy, depth, checkHit());
   if (crossesZero(r)) { // upper-right
     maxDepth = max(maxDepth,
       box(upperRightShapes, translation, midx, midy, ux, uy, ctx, scale, depth + 1, fn)
@@ -240,7 +236,6 @@ function box (inputShapes, translation, lx, ly, ux, uy, ctx, scale, depth, fn) {
   iset(scratchy, midy, uy);
   var upperLeftShapes = []
   r = fn(depth, inputShapes, scratchx, scratchy, translation, upperLeftShapes);
-  r = inout(ctx, r, scratchx, scratchy, depth, checkHit());
   if (crossesZero(r)) { // upper-left
     maxDepth = max(maxDepth,
       box(upperLeftShapes, translation, lx, midy, midx, uy, ctx, scale, depth + 1, fn)
@@ -251,7 +246,6 @@ function box (inputShapes, translation, lx, ly, ux, uy, ctx, scale, depth, fn) {
   iset(scratchy, ly, midy);
   var lowerRightShapes = [];
   r = fn(depth, inputShapes, scratchx, scratchy, translation, lowerRightShapes);
-  r = inout(ctx, r, scratchx, scratchy, depth, checkHit());
   if (crossesZero(r)) { // lower-right
     maxDepth = max(maxDepth,
       box(lowerRightShapes, translation, lx, ly, midx, midy, ctx, scale, depth + 1, fn)
@@ -262,7 +256,6 @@ function box (inputShapes, translation, lx, ly, ux, uy, ctx, scale, depth, fn) {
   iset(scratchy, ly, midy);
   var lowerLeftShapes = [];
   r = fn(depth, inputShapes, scratchx, scratchy, translation, lowerLeftShapes);
-  r = inout(ctx, r, scratchx, scratchy, depth, checkHit());
   if (crossesZero(r)) { // lower-left
     maxDepth = max(maxDepth,
       box(lowerLeftShapes, translation, midx, ly, ux, midy, ctx, scale, depth + 1, fn)
@@ -297,8 +290,6 @@ var clickedShapeIds = [];
 window.addEventListener('mouseup', function mouseup (e) {
   clickedShapeIds.length = 0;
   mouse.down = false;
-  console.log('mouse pos:', mouse.pos)
-  //addShape(mouse.pos[0], mouse.pos[1]);
 
   var mx = mouse.pos[0].toFixed(2);
   var my = mouse.pos[1].toFixed(2);
@@ -324,7 +315,7 @@ window.addEventListener('mousemove', function mousemove (e) {
   ctx.dirty();
 })
 
-var keyboard = { shape: circle, radius: 10 }
+var keyboard = { shape: circle, radius: 10, debug: true }
 window.addEventListener('keydown', function keydown (e) {
   keyboard[e.which] = true;
   ctx.dirty()
@@ -397,6 +388,14 @@ addShape(100, 100)
 var translation = [0, 0];
 var inverted = mat3.create();
 
+function checkHit (shapes) {
+  for (var i = 0; i < shapes.length; i++) {
+    if (clickedShapeIds.indexOf(shapes[i].id) > -1) {
+      return true;
+    }
+  }
+}
+
 var groups = [];
 function evaluateScene (depth, inputShapes, x, y, translation, outFilteredShapes) {
   if (!groups[depth]) {
@@ -435,6 +434,9 @@ function evaluateScene (depth, inputShapes, x, y, translation, outFilteredShapes
 
     imin(distanceInterval, r, r);
   }
+
+  inout(ctx, r, x, y, inputShapes.length, checkHit(inputShapes));
+
   return r;
 }
 
@@ -473,8 +475,6 @@ var ctx = fc(function tick (dt) {
   var localShapes = []
   evaluateScene(0, shapes, [lx, ux], [ly, uy], translation, localShapes)
 
-
-  console.time('render')
   ctx.strokeStyle = 'rgba(255,5,5, 0.25)';
   center(ctx);
   // ctx.translate(mouse.translate[0], mouse.translate[1]);
@@ -491,8 +491,6 @@ var ctx = fc(function tick (dt) {
   //   var avg = sum / group.length
   //   console.log('depth: %s; cells: %s; avg work: %s; total work: %s', i, group.length, (avg).toFixed(2), sum)
   // })
-
-  console.timeEnd('render')
 
   keyboard.shape.helper(ctx);
   ctx.restore()
