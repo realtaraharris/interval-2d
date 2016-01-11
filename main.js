@@ -177,13 +177,16 @@ function opicut(a, b) {
 
 
 var depthColors = colorLerp('#00FF00', '#FF0000', 10);
-function inout(ctx, r, ix, iy, depth) {
+function inout(ctx, r, ix, iy, depth, hit) {
   var scale = mouse.zoom;
   ctx.save()
     ctx.lineWidth = 1/scale;
     var size = Math.max(ix[1] - ix[0], iy[1] - iy[0]);
 
-    if (keyboard.debug && r[0] <= 0 && r[1] <= 0) {
+    if (hit && r[0] <= 0 && r[1] <= 0) {
+      ctx.fillStyle = 'green';//"hsla(14, 100%, 55%, 1)"
+      ctx.fillRect(ix[0], iy[0], (ix[1] - ix[0]), (iy[1] - iy[0]));
+    } else if (keyboard.debug && r[0] <= 0 && r[1] <= 0) {
       ctx.fillStyle = depthColors[depth];//"hsla(14, 100%, 55%, 1)"
       ctx.fillRect(ix[0], iy[0], (ix[1] - ix[0]), (iy[1] - iy[0]));
     } else if (r[0] <= 0 && r[1] >= 0 && size < (1 / mouse.zoom)) {
@@ -216,9 +219,17 @@ function box (inputShapes, translation, lx, ly, ux, uy, ctx, scale, depth, fn) {
   iset(scratchx, midx, ux);
   iset(scratchy, midy, uy);
 
+  function checkHit () {
+    for (var i = 0; i < inputShapes.length; i++) {
+      if (clickedShapeIds.indexOf(inputShapes[i].id) > -1) {
+        return true;
+      }
+    }
+  }
+
   var upperRightShapes = []
   r = fn(depth, inputShapes, scratchx, scratchy, translation, upperRightShapes);
-  r = inout(ctx, r, scratchx, scratchy, depth);
+  r = inout(ctx, r, scratchx, scratchy, depth, checkHit());
   if (crossesZero(r)) { // upper-right
     maxDepth = max(maxDepth,
       box(upperRightShapes, translation, midx, midy, ux, uy, ctx, scale, depth + 1, fn)
@@ -229,7 +240,7 @@ function box (inputShapes, translation, lx, ly, ux, uy, ctx, scale, depth, fn) {
   iset(scratchy, midy, uy);
   var upperLeftShapes = []
   r = fn(depth, inputShapes, scratchx, scratchy, translation, upperLeftShapes);
-  r = inout(ctx, r, scratchx, scratchy, depth);
+  r = inout(ctx, r, scratchx, scratchy, depth, checkHit());
   if (crossesZero(r)) { // upper-left
     maxDepth = max(maxDepth,
       box(upperLeftShapes, translation, lx, midy, midx, uy, ctx, scale, depth + 1, fn)
@@ -240,7 +251,7 @@ function box (inputShapes, translation, lx, ly, ux, uy, ctx, scale, depth, fn) {
   iset(scratchy, ly, midy);
   var lowerRightShapes = [];
   r = fn(depth, inputShapes, scratchx, scratchy, translation, lowerRightShapes);
-  r = inout(ctx, r, scratchx, scratchy, depth);
+  r = inout(ctx, r, scratchx, scratchy, depth, checkHit());
   if (crossesZero(r)) { // lower-right
     maxDepth = max(maxDepth,
       box(lowerRightShapes, translation, lx, ly, midx, midy, ctx, scale, depth + 1, fn)
@@ -251,7 +262,7 @@ function box (inputShapes, translation, lx, ly, ux, uy, ctx, scale, depth, fn) {
   iset(scratchy, ly, midy);
   var lowerLeftShapes = [];
   r = fn(depth, inputShapes, scratchx, scratchy, translation, lowerLeftShapes);
-  r = inout(ctx, r, scratchx, scratchy, depth);
+  r = inout(ctx, r, scratchx, scratchy, depth, checkHit());
   if (crossesZero(r)) { // lower-left
     maxDepth = max(maxDepth,
       box(lowerLeftShapes, translation, midx, ly, ux, midy, ctx, scale, depth + 1, fn)
@@ -281,9 +292,27 @@ window.addEventListener('mousewheel', function mousewheel (e) {
 })
 
 window.addEventListener('mousedown', function mousedown (e) { mouse.down = [e.clientX, e.clientY]; })
+
+var clickedShapeIds = [];
 window.addEventListener('mouseup', function mouseup (e) {
+  clickedShapeIds.length = 0;
   mouse.down = false;
-  addShape(mouse.pos[0], mouse.pos[1]);
+  console.log('mouse pos:', mouse.pos)
+  //addShape(mouse.pos[0], mouse.pos[1]);
+
+  var mx = mouse.pos[0].toFixed(2);
+  var my = mouse.pos[1].toFixed(2);
+  var selRadius = 10;
+
+  var clickedShapes = [];
+  evaluateScene(0, shapes, [mx - selRadius, mx + selRadius], [my - selRadius, my + selRadius], translation, clickedShapes);
+
+  for (var i = 0; i < clickedShapes.length; i++) {
+    clickedShapeIds.push(clickedShapes[i].id);
+    console.log(clickedShapes[i].id);
+  }
+
+  ctx.dirty();
 })
 window.addEventListener('mousemove', function mousemove (e) {
   mouse.pos[0] = (e.clientX - ctx.canvas.width / 2) / mouse.zoom - mouse.translate[0];
@@ -294,7 +323,6 @@ window.addEventListener('mousemove', function mousemove (e) {
   }
   ctx.dirty();
 })
-
 
 var keyboard = { shape: circle, radius: 10 }
 window.addEventListener('keydown', function keydown (e) {
@@ -326,6 +354,7 @@ window.addEventListener('keyup', function keyup (e) {
   ctx.dirty()
 })
 
+var globalShapeId = 0;
 function addShape(cx, cy) {
 
   var transform = mat3.create();
@@ -336,7 +365,8 @@ function addShape(cx, cy) {
   shapes.push({
     fn: keyboard.shape,
     args: [r, r],
-    transform: transform
+    transform: transform,
+    id: globalShapeId++
   })
 
   ctx && ctx.dirty()
@@ -344,8 +374,9 @@ function addShape(cx, cy) {
 
 var shapes = [];
 
-// addShape(10, 10, 10, 50)
-// addShape(100, 100, 10, 50)
+addShape(10, 10)
+addShape(10, 20)
+addShape(100, 100)
 
 // for (var x = -500; x<=500; x+=10) {
 //   for (var y = -200; y<=200; y+=10) {
@@ -365,6 +396,47 @@ var shapes = [];
 
 var translation = [0, 0];
 var inverted = mat3.create();
+
+var groups = [];
+function evaluateScene (depth, inputShapes, x, y, translation, outFilteredShapes) {
+  if (!groups[depth]) {
+    groups.push([]);
+  }
+  groups[depth].push(inputShapes.length)
+
+  var l = inputShapes.length;
+  var r = ival(1);
+  var st = [0, 0];
+  for (var i=0; i<l; i++) {
+    var c = inputShapes[i];
+
+    mat3.translate(inverted, c.transform, translation);
+    mat3.invert(inverted, inverted);
+
+    var vll = [x[0], y[0]];
+    var vlu = [x[0], y[1]];
+    var vul = [x[1], y[0]];
+    var vuu = [x[1], y[1]];
+
+    vec2.transformMat3(vll, vll, inverted);
+    vec2.transformMat3(vlu, vlu, inverted);
+    vec2.transformMat3(vul, vul, inverted);
+    vec2.transformMat3(vuu, vuu, inverted);
+
+    var distanceInterval = c.fn(
+      [min(vll[0], vlu[0], vul[0], vuu[0]), max(vll[0], vlu[0], vul[0], vuu[0])],
+      [min(vll[1], vlu[1], vul[1], vuu[1]), max(vll[1], vlu[1], vul[1], vuu[1])],
+      c.args
+    );
+
+    if (crossesZero(distanceInterval)) {
+      outFilteredShapes.push(c)
+    }
+
+    imin(distanceInterval, r, r);
+  }
+  return r;
+}
 
 var ctx = fc(function tick (dt) {
   ctx.save()
@@ -398,7 +470,6 @@ var ctx = fc(function tick (dt) {
   ctx.clear('black');
 
   var localShapes = []
-  var groups = [];
   evaluateScene(0, shapes, [lx, ux], [ly, uy], translation, localShapes)
 
 
@@ -408,46 +479,6 @@ var ctx = fc(function tick (dt) {
   // ctx.translate(mouse.translate[0], mouse.translate[1]);
   ctx.scale(mouse.zoom, mouse.zoom)
   ctx.lineWidth = 1/mouse.zoom
-
-  function evaluateScene (depth, inputShapes, x, y, translation, outFilteredShapes) {
-    if (!groups[depth]) {
-      groups.push([]);
-    }
-    groups[depth].push(inputShapes.length)
-
-    var l = inputShapes.length;
-    var r = ival(1);
-    var st = [0, 0];
-    for (var i=0; i<l; i++) {
-      var c = inputShapes[i];
-
-      mat3.translate(inverted, c.transform, translation);
-      mat3.invert(inverted, inverted);
-
-      var vll = [x[0], y[0]];
-      var vlu = [x[0], y[1]];
-      var vul = [x[1], y[0]];
-      var vuu = [x[1], y[1]];
-
-      vec2.transformMat3(vll, vll, inverted);
-      vec2.transformMat3(vlu, vlu, inverted);
-      vec2.transformMat3(vul, vul, inverted);
-      vec2.transformMat3(vuu, vuu, inverted);
-
-      var distanceInterval = c.fn(
-        [min(vll[0], vlu[0], vul[0], vuu[0]), max(vll[0], vlu[0], vul[0], vuu[0])],
-        [min(vll[1], vlu[1], vul[1], vuu[1]), max(vll[1], vlu[1], vul[1], vuu[1])],
-        c.args
-      );
-
-      if (crossesZero(distanceInterval)) {
-        outFilteredShapes.push(c)
-      }
-
-      imin(distanceInterval, r, r);
-    }
-    return r;
-  }
 
   box(shapes, translation, lx, ly, ux, uy, ctx, mouse.zoom, 0, evaluateScene);
 
