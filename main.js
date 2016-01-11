@@ -439,6 +439,7 @@ function evaluateScene (depth, inputShapes, x, y, translation, outFilteredShapes
 }
 
 var ctx = fc(function tick (dt) {
+  var renderStart = Date.now();
   ctx.save()
   var hw = (ctx.canvas.width / 2) / mouse.zoom;
   var hh = (ctx.canvas.height / 2) / mouse.zoom;
@@ -500,5 +501,6 @@ var ctx = fc(function tick (dt) {
   ctx.fillStyle = "white";
   ctx.font = "12px monospace"
   ctx.fillText('shapes: ' + localShapes.length + '/' + shapes.length, 10, 20);
+  ctx.fillText('ms: ' + (Date.now() - renderStart), 10, 40);
 
 }, false);
