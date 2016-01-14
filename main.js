@@ -59,7 +59,7 @@ function iabs (i) {
   } else if (i[1] <= 0.0) {
     return [-i[1], -i[0]];
   } else {
-    return [0, Math.max(-i[0], i[1])];
+    return [0, max(-i[0], i[1])];
   }
 }
 
@@ -188,7 +188,7 @@ function inout(ctx, r, ix, iy, work, hit) {
   var scale = mouse.zoom;
   ctx.save()
     ctx.lineWidth = 1/scale;
-    var size = Math.max(ix[1] - ix[0], iy[1] - iy[0]);
+    var size = max(ix[1] - ix[0], iy[1] - iy[0]);
 
     if (hit && r[0] <= 0 && r[1] <= 0) {
       ctx.fillStyle = 'green';//"hsla(14, 100%, 55%, 1)"
