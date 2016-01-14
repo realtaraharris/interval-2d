@@ -212,11 +212,6 @@ function box (inputShapes, translation, lx, ly, ux, uy, ctx, scale, depth, fn) {
   var maxDepth = depth;
   var work = inputShapes.length;
 
-  var size = Math.max(ux - lx, uy - ly) * scale
-  if (size < 1) {
-    return maxDepth;
-  }
-
   var midx = middle(lx, ux);
   var midy = middle(ly, uy);
   var r;
@@ -227,9 +222,15 @@ function box (inputShapes, translation, lx, ly, ux, uy, ctx, scale, depth, fn) {
   var upperRightShapes = []
   r = fn(depth, inputShapes, scratchx, scratchy, translation, upperRightShapes);
   if (crossesZero(r)) { // upper-right
-    maxDepth = max(maxDepth,
-      box(upperRightShapes, translation, midx, midy, ux, uy, ctx, scale, depth + 1, fn)
-    );
+    if (max(ux - midx, uy - midy) * scale >= 1) {
+      maxDepth = max(maxDepth,
+        box(upperRightShapes, translation,
+          midx, midy, ux, uy,
+          ctx, scale, depth + 1, fn)
+      );
+    } else {
+      return depth + 1;
+    }
   }
 
   iset(scratchx, lx, midx);
@@ -237,9 +238,13 @@ function box (inputShapes, translation, lx, ly, ux, uy, ctx, scale, depth, fn) {
   var upperLeftShapes = []
   r = fn(depth, inputShapes, scratchx, scratchy, translation, upperLeftShapes);
   if (crossesZero(r)) { // upper-left
-    maxDepth = max(maxDepth,
-      box(upperLeftShapes, translation, lx, midy, midx, uy, ctx, scale, depth + 1, fn)
-    );
+    if (max(midx - lx, uy - midy) * scale >= 1) {
+      maxDepth = max(maxDepth,
+        box(upperLeftShapes, translation, lx, midy, midx, uy, ctx, scale, depth + 1, fn)
+      );
+    } else {
+      return depth + 1;
+    }
   }
 
   iset(scratchx, lx, midx);
@@ -247,9 +252,13 @@ function box (inputShapes, translation, lx, ly, ux, uy, ctx, scale, depth, fn) {
   var lowerRightShapes = [];
   r = fn(depth, inputShapes, scratchx, scratchy, translation, lowerRightShapes);
   if (crossesZero(r)) { // lower-right
-    maxDepth = max(maxDepth,
-      box(lowerRightShapes, translation, lx, ly, midx, midy, ctx, scale, depth + 1, fn)
-    );
+    if (max(midx - lx, midy - ly) * scale >= 1) {
+      maxDepth = max(maxDepth,
+        box(lowerRightShapes, translation, lx, ly, midx, midy, ctx, scale, depth + 1, fn)
+      );
+    } else {
+      return depth + 1;
+    }
   }
 
   iset(scratchx, midx, ux);
@@ -257,9 +266,13 @@ function box (inputShapes, translation, lx, ly, ux, uy, ctx, scale, depth, fn) {
   var lowerLeftShapes = [];
   r = fn(depth, inputShapes, scratchx, scratchy, translation, lowerLeftShapes);
   if (crossesZero(r)) { // lower-left
-    maxDepth = max(maxDepth,
-      box(lowerLeftShapes, translation, midx, ly, ux, midy, ctx, scale, depth + 1, fn)
-    );
+    if (max(ux - midx, midy - ly) * scale >= 1) {
+      maxDepth = max(maxDepth,
+        box(lowerLeftShapes, translation, midx, ly, ux, midy, ctx, scale, depth + 1, fn)
+      );
+    } else {
+      return depth + 1;
+    }
   }
 
   return maxDepth;
