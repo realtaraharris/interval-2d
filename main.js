@@ -206,7 +206,6 @@ function idiv(a, b) {
 
 function crossesZero (a) {
   var tmp = raf_contains(a, 0);
-  console.log('crossesZero:', tmp);
   return tmp;
 }
 
@@ -222,9 +221,7 @@ function circle2 (x, y, r) {
   var X = interval_to_raf(x);
   var Y = interval_to_raf(y);
 
-console.log('X, Y:', X, Y);
-
-  return raf_add(raf_add(raf_mul(X, X), raf_mul(Y, Y)), r[0] * -1);
+  return raf_add_const(raf_add(raf_mul(X, X), raf_mul(Y, Y)), r[0][0] * -1);
 }
 
 circle2.helper = circle.helper = function circleHelper(ctx) {
@@ -233,7 +230,6 @@ circle2.helper = circle.helper = function circleHelper(ctx) {
     ctx.strokeStyle = "#FF0073"
     ctx.stroke();
 }
-
 
 function rect (x, y, args) {
   return imax(isub(iabs(x), args[0]), isub(iabs(y), args[1]));
@@ -321,13 +317,13 @@ function box (inputShapes, translation, lx, ly, ux, uy, ctx, scale, depth, fn) {
   var upperRightShapes = []
   r = fn(depth, inputShapes, scratchx, scratchy, translation, upperRightShapes);
   if (crossesZero(r)) { // upper-right
-//    if (max(ux - midx, uy - midy) * scale >= 1) {
+   if (max(ux - midx, uy - midy) * scale >= 1) {
       maxDepth = max(maxDepth,
         box(upperRightShapes, translation, midx, midy, ux, uy, ctx, scale, depth + 1, fn)
       );
-    // } else {
-    //   return depth + 1;
-    // }
+    } else {
+      return depth + 1;
+    }
   }
 
   iset(scratchx, lx, midx);
@@ -413,8 +409,7 @@ window.addEventListener('mouseup', function mouseup (e) {
   //   console.log(clickedShapes[i].id);
   // }
 
-
- addShape(mouse.pos[0], mouse.pos[1]);
+  addShape(mouse.pos[0], mouse.pos[1]);
 
   ctx.dirty();
 })
@@ -437,9 +432,6 @@ window.addEventListener('keydown', function keydown (e) {
     keyboard.shape = rect;
   // c
   } else if (e.which === 67) {
-    keyboard.shape = circle;
-  // t
-  } else if (e.which === 84) {
     keyboard.shape = circle2;
   }
 
@@ -481,8 +473,8 @@ function addShape(cx, cy) {
 
 var shapes = [];
 
-addShape(10, 10)
-//addShape(10, 20)
+addShape(20, 20)
+// addShape(10, 20)
 // addShape(100, 100)
 
 // for (var x = -500; x<=500; x+=10) {
@@ -498,8 +490,6 @@ addShape(10, 10)
 
 //   ctx.dirty()
 // }, 16);
-
-
 
 var translation = [0, 0];
 var inverted = mat3.create();
@@ -520,7 +510,7 @@ function evaluateScene (depth, inputShapes, x, y, translation, outFilteredShapes
   groups[depth].push(inputShapes.length)
 
   var l = inputShapes.length;
-  var r = ival(1);
+  var r = interval_to_raf(ival(1));
   var st = [0, 0];
 
   var vll = [];
@@ -530,10 +520,8 @@ function evaluateScene (depth, inputShapes, x, y, translation, outFilteredShapes
   var distanceInterval = [];
   var c;
 
-
-c = inputShapes[0];
-  // for (var i=0; i<l; i++) {
-  //   c = inputShapes[i];
+  for (var i=0; i<l; i++) {
+    c = inputShapes[i];
 
     mat3.translate(inverted, c.transform, translation);
     mat3.invert(inverted, inverted);
@@ -553,13 +541,12 @@ c = inputShapes[0];
       [min(vll[1], vlu[1], vul[1], vuu[1]), max(vll[1], vlu[1], vul[1], vuu[1])],
       c.args
     );
-
     if (crossesZero(distanceInterval)) {
       outFilteredShapes.push(c)
     }
 
-  //   imin(distanceInterval, r, r);
-  // }
+    imin(distanceInterval, r, r);
+  }
 
   inout(ctx, r, x, y, inputShapes.length, checkHit(inputShapes));
 
@@ -620,7 +607,6 @@ var ctx = fc(function tick (dt) {
 
   keyboard.shape.helper(ctx);
   ctx.restore()
-
 
   ctx.fillStyle = "white";
   ctx.font = "12px monospace"
