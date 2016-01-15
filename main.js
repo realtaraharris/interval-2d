@@ -4,7 +4,7 @@ var mat3 = glm.mat3;
 var vec2 = glm.vec2;
 var drawCircle = require('ctx-circle');
 var center = require('ctx-translate-center');
-var iadd = require('interval-add');
+//var iadd = require('interval-add');
 var isub = require('interval-subtract');
 var imul = require('interval-multiply');
 var imin = require('interval-min');
@@ -13,32 +13,114 @@ var colorLerp = require('color-lerp');
 var max = Math.max;
 var min = Math.min;
 
+function interval_to_raf (i) {
+  return [
+    (i[1] + i[0]) * 0.5,
+    (i[1] - i[0]) * 0.5,
+    0
+  ];
+}
+
+function raf_radius (a) {
+  return Math.abs(a[1]) + a[2];
+}
+
+function raf_to_interval (a) {
+  var rad = raf_radius(a);
+  return [ a[0] - rad, a[0] + rad ];
+}
+
+function raf_add (a, b) {
+  return [ a[0] + b[0], a[1] + b[1], a[2] + b[2] ];
+}
+
+function raf_mul (a, b) {
+  return [
+    a[0] * b[0],
+    a[0]*b[1] + b[0]*a[1],
+    Math.abs(a[0]*b[2]) + Math.abs(b[0]*a[2]) + raf_radius(a)*raf_radius(b)
+  ];
+}
+
+function raf_contains (a, t) {
+  return (Math.abs(t - a[0]) < raf_radius(a));
+}
+
+function raf_add_const (a, t) {
+  var re = a;
+  re[0] = re[0] + t;
+  return re;
+}
+
+function iadd (a, b, out) {
+  out = out || [0, 0];
+
+  var ra = interval_to_raf(a);
+  var rb = interval_to_raf(b);
+
+  var tmp = raf_add(ra, rb);
+
+  out = raf_to_interval(tmp);
+  return out;
+}
+
+function imul (a, b, out) {
+  out = out || [0, 0];
+
+  var ra = interval_to_raf(a);
+  var rb = interval_to_raf(b);
+
+  var tmp = raf_mul(ra, rb);
+
+  out = raf_to_interval(tmp);
+  return out;
+}
+
+var once = true
+function isqr (a) {
+  if (once) {
+    console.log('in new isqr()');
+    once = false
+  }
+  var ra = interval_to_raf(a);
+
+  return raf_mul(ra, ra);
+}
+
+
+console.log(iadd([-1, 4], [3, 10]));
+console.log(iadd([1, 3], [0, 4]));
+
+console.log(imul([1, 2], [2, 3]));
+console.log(imul([-1, 3], [-1, 3]));
+
+
 function hsl(h, s, l) {
   var p = (241 - (h * 241)|0) % 360
   var r = 'hsl(' + p + ',' + s + '%,' + l + '%)';
   return r;
 }
 
-function isqr(a) {
-  if (a[0]>=0.0) {
-    return [a[0] * a[0], a[1] * a[1]]
-  } else if (a[1] < 0.0) {
-    return [a[1] * a[1], a[0] * a[0]]
-  } else {
-    return [0.0, max(a[0]*a[0], a[1]*a[1])]
-  }
-}
+// function isqr(a) {
+//   if (a[0]>=0.0) {
+//     return [a[0] * a[0], a[1] * a[1]]
+//   } else if (a[1] < 0.0) {
+//     return [a[1] * a[1], a[0] * a[0]]
+//   } else {
+//     return [0.0, max(a[0]*a[0], a[1]*a[1])]
+//   }
+// }
 
 function sign(a) {
   return typeof a === 'number' ? a ? a < 0 ? -1 : 1 : a === a ? 0 : 0 : 0
 }
 
-function ilensq(a, b) {
-  var pa = isqr(a)
-  var pb = isqr(b)
+// function ilensq(a, b) {
+//   var pa = isqr(a)
+//   var pb = isqr(b)
 
-  return [pa[0] + pb[0], pa[1] + pb[1]]
-}
+//   return [pa[0] + pb[0], pa[1] + pb[1]]
+// }
 
 function isqrt(a) {
   return [Math.sqrt(a[0]), Math.sqrt(a[1])];
@@ -378,9 +460,9 @@ function addShape(cx, cy) {
 
 var shapes = [];
 
-addShape(10, 10)
-addShape(10, 20)
-addShape(100, 100)
+//addShape(10, 10)
+//addShape(10, 20)
+// addShape(100, 100)
 
 // for (var x = -500; x<=500; x+=10) {
 //   for (var y = -200; y<=200; y+=10) {
