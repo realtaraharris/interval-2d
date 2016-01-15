@@ -194,7 +194,7 @@ function inout(ctx, r, ix, iy, work, hit) {
       ctx.fillStyle = 'green';//"hsla(14, 100%, 55%, 1)"
       ctx.fillRect(ix[0], iy[0], (ix[1] - ix[0]), (iy[1] - iy[0]));
     } else if (keyboard.debug && r[0] <= 0 && r[1] <= 0) {
-      ctx.fillStyle = hsl(work / maxWork, 100,  50);
+      ctx.fillStyle = hsl(work, 100,  50);
       ctx.fillRect(ix[0], iy[0], (ix[1] - ix[0]), (iy[1] - iy[0]));
     } else if (r[0] <= 0 && r[1] >= 0 && size < (1 / mouse.zoom)) {
       ctx.fillStyle = 'white'
@@ -359,12 +359,12 @@ window.addEventListener('keyup', function keyup (e) {
 })
 
 var globalShapeId = 0;
-function addShape(cx, cy) {
+function addShape(cx, cy, radius) {
 
   var transform = mat3.create();
   mat3.translate(transform, transform, [cx, cy])
 
-  var r = ival(keyboard.radius);
+  var r = ival(radius || keyboard.radius);
 
   shapes.push({
     fn: keyboard.shape,
@@ -378,9 +378,11 @@ function addShape(cx, cy) {
 
 var shapes = [];
 
-addShape(10, 10)
-addShape(10, 20)
-addShape(100, 100)
+// addShape(0, 0, 50, 10)
+// addShape(50, 0, 10, 10)
+// addShape(0, 50, 10, 10)
+// addShape(0, -50, 10, 10)
+// addShape(-50, 0, 10, 10)
 
 // for (var x = -500; x<=500; x+=10) {
 //   for (var y = -200; y<=200; y+=10) {
@@ -448,12 +450,13 @@ function evaluateScene (depth, inputShapes, x, y, translation, outFilteredShapes
     imin(distanceInterval, r, r);
   }
 
-  inout(ctx, r, x, y, inputShapes.length, checkHit(inputShapes));
+  inout(ctx, r, x, y, min(inputShapes.length / 10, 1), checkHit(inputShapes));
 
   return r;
 }
 
 var ctx = fc(function tick (dt) {
+  groups = [];
   var renderStart = Date.now();
   ctx.save()
   var hw = (ctx.canvas.width / 2) / mouse.zoom;
