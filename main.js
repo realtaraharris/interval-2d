@@ -200,8 +200,14 @@ function idiv(a, b) {
   return [min(l, u), max(l, u)]
 }
 
-function crossesZero (interval) {
-  return 0 >= interval[0] && 0 <= interval[1];
+// function crossesZero (interval) {
+//   return 0 >= interval[0] && 0 <= interval[1];
+// }
+
+function crossesZero (a) {
+  var tmp = raf_contains(a, 0);
+  console.log('crossesZero:', tmp);
+  return tmp;
 }
 
 function middle (l, u) {
@@ -212,7 +218,16 @@ function circle (x, y, r) {
   return isub(ilen(x, y), r[0]);
 }
 
-circle.helper = function circleHelper(ctx) {
+function circle2 (x, y, r) {
+  var X = interval_to_raf(x);
+  var Y = interval_to_raf(y);
+
+console.log('X, Y:', X, Y);
+
+  return raf_add(raf_add(raf_mul(X, X), raf_mul(Y, Y)), r[0] * -1);
+}
+
+circle2.helper = circle.helper = function circleHelper(ctx) {
   ctx.beginPath()
     drawCircle(ctx, mouse.pos[0] + mouse.translate[0], mouse.pos[1] + mouse.translate[1], keyboard.radius);
     ctx.strokeStyle = "#FF0073"
@@ -235,7 +250,10 @@ rect.helper = function rectHelper(ctx) {
   );
 }
 
-function triangle (x, y, w, h, translation) {
+function triangle (x, y) {
+  var w = 1;
+  var h = 1;
+
   return imax(
     isub(
       imul(isub(x, h), isub(h, h)),
@@ -266,7 +284,6 @@ function opicut(a, b) {
 
 function inout(ctx, r, ix, iy, work, hit) {
   var maxWork = shapes.length;
-
   var scale = mouse.zoom;
   ctx.save()
     ctx.lineWidth = 1/scale;
@@ -304,15 +321,13 @@ function box (inputShapes, translation, lx, ly, ux, uy, ctx, scale, depth, fn) {
   var upperRightShapes = []
   r = fn(depth, inputShapes, scratchx, scratchy, translation, upperRightShapes);
   if (crossesZero(r)) { // upper-right
-    if (max(ux - midx, uy - midy) * scale >= 1) {
+//    if (max(ux - midx, uy - midy) * scale >= 1) {
       maxDepth = max(maxDepth,
-        box(upperRightShapes, translation,
-          midx, midy, ux, uy,
-          ctx, scale, depth + 1, fn)
+        box(upperRightShapes, translation, midx, midy, ux, uy, ctx, scale, depth + 1, fn)
       );
-    } else {
-      return depth + 1;
-    }
+    // } else {
+    //   return depth + 1;
+    // }
   }
 
   iset(scratchx, lx, midx);
@@ -386,17 +401,20 @@ window.addEventListener('mouseup', function mouseup (e) {
   clickedShapeIds.length = 0;
   mouse.down = false;
 
-  var mx = mouse.pos[0].toFixed(2);
-  var my = mouse.pos[1].toFixed(2);
-  var selRadius = 10;
+  // var mx = mouse.pos[0].toFixed(2);
+  // var my = mouse.pos[1].toFixed(2);
+  // var selRadius = 10;
 
-  var clickedShapes = [];
-  evaluateScene(0, shapes, [mx - selRadius, mx + selRadius], [my - selRadius, my + selRadius], translation, clickedShapes);
+  // var clickedShapes = [];
+  // evaluateScene(0, shapes, [mx - selRadius, mx + selRadius], [my - selRadius, my + selRadius], translation, clickedShapes);
 
-  for (var i = 0; i < clickedShapes.length; i++) {
-    clickedShapeIds.push(clickedShapes[i].id);
-    console.log(clickedShapes[i].id);
-  }
+  // for (var i = 0; i < clickedShapes.length; i++) {
+  //   clickedShapeIds.push(clickedShapes[i].id);
+  //   console.log(clickedShapes[i].id);
+  // }
+
+
+ addShape(mouse.pos[0], mouse.pos[1]);
 
   ctx.dirty();
 })
@@ -410,7 +428,7 @@ window.addEventListener('mousemove', function mousemove (e) {
   ctx.dirty();
 })
 
-var keyboard = { shape: circle, radius: 10, debug: true }
+var keyboard = { shape: circle2, radius: 10, debug: true }
 window.addEventListener('keydown', function keydown (e) {
   keyboard[e.which] = true;
   ctx.dirty()
@@ -420,6 +438,9 @@ window.addEventListener('keydown', function keydown (e) {
   // c
   } else if (e.which === 67) {
     keyboard.shape = circle;
+  // t
+  } else if (e.which === 84) {
+    keyboard.shape = circle2;
   }
 
   // ]
@@ -460,7 +481,7 @@ function addShape(cx, cy) {
 
 var shapes = [];
 
-//addShape(10, 10)
+addShape(10, 10)
 //addShape(10, 20)
 // addShape(100, 100)
 
@@ -501,23 +522,33 @@ function evaluateScene (depth, inputShapes, x, y, translation, outFilteredShapes
   var l = inputShapes.length;
   var r = ival(1);
   var st = [0, 0];
-  for (var i=0; i<l; i++) {
-    var c = inputShapes[i];
+
+  var vll = [];
+  var vlu = [];
+  var vul = [];
+  var vuu = [];
+  var distanceInterval = [];
+  var c;
+
+
+c = inputShapes[0];
+  // for (var i=0; i<l; i++) {
+  //   c = inputShapes[i];
 
     mat3.translate(inverted, c.transform, translation);
     mat3.invert(inverted, inverted);
 
-    var vll = [x[0], y[0]];
-    var vlu = [x[0], y[1]];
-    var vul = [x[1], y[0]];
-    var vuu = [x[1], y[1]];
+    vll = [x[0], y[0]];
+    vlu = [x[0], y[1]];
+    vul = [x[1], y[0]];
+    vuu = [x[1], y[1]];
 
     vec2.transformMat3(vll, vll, inverted);
     vec2.transformMat3(vlu, vlu, inverted);
     vec2.transformMat3(vul, vul, inverted);
     vec2.transformMat3(vuu, vuu, inverted);
 
-    var distanceInterval = c.fn(
+    distanceInterval = c.fn(
       [min(vll[0], vlu[0], vul[0], vuu[0]), max(vll[0], vlu[0], vul[0], vuu[0])],
       [min(vll[1], vlu[1], vul[1], vuu[1]), max(vll[1], vlu[1], vul[1], vuu[1])],
       c.args
@@ -527,8 +558,8 @@ function evaluateScene (depth, inputShapes, x, y, translation, outFilteredShapes
       outFilteredShapes.push(c)
     }
 
-    imin(distanceInterval, r, r);
-  }
+  //   imin(distanceInterval, r, r);
+  // }
 
   inout(ctx, r, x, y, inputShapes.length, checkHit(inputShapes));
 
