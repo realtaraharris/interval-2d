@@ -545,10 +545,12 @@ function evaluateScene (depth, inputShapes, x, y, translation, outFilteredShapes
       outFilteredShapes.push(c)
     }
 
-    imin(distanceInterval, r, r);
+    var out = [0, 0];
+    imin(raf_to_interval(distanceInterval), raf_to_interval(r), out);
+    r = interval_to_raf(out);
   }
 
-  inout(ctx, r, x, y, inputShapes.length, checkHit(inputShapes));
+  inout(ctx, raf_to_interval(r), x, y, inputShapes.length, checkHit(inputShapes));
 
   return r;
 }
