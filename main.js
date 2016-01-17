@@ -21,6 +21,10 @@ function interval_to_raf (i) {
   ];
 }
 
+function raf_val (v) {
+  return [ v, 0, 0 ];
+}
+
 function raf_abs (a) {
   return interval_to_raf(iabs(raf_to_interval(a)));
 }
@@ -607,8 +611,7 @@ function evaluateScene (depth, inputShapes, x, y, translation, outFilteredShapes
   groups[depth].push(inputShapes.length)
 
   var l = inputShapes.length;
-  var r = interval_to_raf(ival(1));
-  var st = [0, 0];
+  var r = raf_val(1);
 
   var vll = [];
   var vlu = [];
@@ -643,9 +646,7 @@ function evaluateScene (depth, inputShapes, x, y, translation, outFilteredShapes
       outFilteredShapes.push(c)
     }
 
-    var out = [0, 0, 0];
-    raf_min(distanceInterval, r, out);
-    r = out;
+    raf_min(distanceInterval, r, r);
   }
 
   inout(ctx, raf_to_interval(r), x, y, inputShapes.length, checkHit(inputShapes));
