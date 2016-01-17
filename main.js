@@ -122,8 +122,22 @@ function crossesZero (interval) {
   return 0 >= interval[0] && 0 <= interval[1];
 }
 
+function lerp (l, u, t) {
+  return (l + u) * t;
+}
+
+function ineg(i) {
+  var l = -i[0];
+  var u = -i[1];
+
+  return [
+    min(l, u),
+    max(l, u)
+  ];
+}
+
 function middle (l, u) {
-  return (l + u) * 0.5;
+  return lerp(l, u, 0.5);
 }
 
 function circle (x, y, r) {
