@@ -384,11 +384,11 @@ var shapes = [];
 // addShape(0, -50, 10, 10)
 // addShape(-50, 0, 10, 10)
 
-// for (var x = -500; x<=500; x+=10) {
-//   for (var y = -200; y<=200; y+=10) {
-//     addShape(x, y, 10, 10);//shapes.push([x, y, 10])
-//   }
-// }
+for (var x = -500; x<=500; x+=10) {
+  for (var y = -200; y<=200; y+=10) {
+    addShape(x, y, 10, 10);//shapes.push([x, y, 10])
+  }
+}
 
 // setInterval(function() {
 //   mat3.rotate(shapes[0].transform, shapes[0].transform, Math.PI/100)
