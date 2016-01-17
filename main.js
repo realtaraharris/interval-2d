@@ -116,34 +116,34 @@ function raf_max (x, y) {
   }
 }
 
-var nnn = [0, 7];
-var mmm = [2, 8];
+// var nnn = [0, 7];
+// var mmm = [2, 8];
 
-console.log('raf_max:', raf_to_interval(raf_max(interval_to_raf(mmm), interval_to_raf(nnn))))
-console.log('imax, with conversion:', imax(raf_to_interval(interval_to_raf(mmm)), raf_to_interval(interval_to_raf(nnn))))
-console.log('imax, vanilla:', imax(mmm, nnn))
+// console.log('raf_max:', raf_to_interval(raf_max(interval_to_raf(mmm), interval_to_raf(nnn))))
+// console.log('imax, with conversion:', imax(raf_to_interval(interval_to_raf(mmm)), raf_to_interval(interval_to_raf(nnn))))
+// console.log('imax, vanilla:', imax(mmm, nnn))
 
-nnn = [-10, 7];
-mmm = [2, 8];
+// nnn = [-10, 7];
+// mmm = [2, 8];
 
-console.log('raf_max:', raf_to_interval(raf_max(interval_to_raf(mmm), interval_to_raf(nnn))))
-console.log('imax, with conversion:', imax(raf_to_interval(interval_to_raf(mmm)), raf_to_interval(interval_to_raf(nnn))))
-console.log('imax, vanilla:', imax(mmm, nnn))
+// console.log('raf_max:', raf_to_interval(raf_max(interval_to_raf(mmm), interval_to_raf(nnn))))
+// console.log('imax, with conversion:', imax(raf_to_interval(interval_to_raf(mmm)), raf_to_interval(interval_to_raf(nnn))))
+// console.log('imax, vanilla:', imax(mmm, nnn))
 
-nnn = [10, 70];
-mmm = [2, 8];
+// nnn = [10, 70];
+// mmm = [2, 8];
 
-console.log('raf_max:', raf_to_interval(raf_max(interval_to_raf(mmm), interval_to_raf(nnn))))
-console.log('imax, with conversion:', imax(raf_to_interval(interval_to_raf(mmm)), raf_to_interval(interval_to_raf(nnn))))
-console.log('imax, vanilla:', imax(mmm, nnn))
+// console.log('raf_max:', raf_to_interval(raf_max(interval_to_raf(mmm), interval_to_raf(nnn))))
+// console.log('imax, with conversion:', imax(raf_to_interval(interval_to_raf(mmm)), raf_to_interval(interval_to_raf(nnn))))
+// console.log('imax, vanilla:', imax(mmm, nnn))
 
 
-nnn = [-70, -10];
-mmm = [2, 8];
+// nnn = [-70, -10];
+// mmm = [2, 8];
 
-console.log('raf_max:', raf_to_interval(raf_max(interval_to_raf(mmm), interval_to_raf(nnn))))
-console.log('imax, with conversion:', imax(raf_to_interval(interval_to_raf(mmm)), raf_to_interval(interval_to_raf(nnn))))
-console.log('imax, vanilla:', imax(mmm, nnn))
+// console.log('raf_max:', raf_to_interval(raf_max(interval_to_raf(mmm), interval_to_raf(nnn))))
+// console.log('imax, with conversion:', imax(raf_to_interval(interval_to_raf(mmm)), raf_to_interval(interval_to_raf(nnn))))
+// console.log('imax, vanilla:', imax(mmm, nnn))
 
 // function iadd (a, b, out) {
 //   out = out || [0, 0];
@@ -298,8 +298,7 @@ function idiv(a, b) {
 // }
 
 function crossesZero (a) {
-  var tmp = raf_contains(a, 0);
-  return tmp;
+  return raf_contains(a, 0);
 }
 
 function middle (l, u) {
@@ -311,10 +310,7 @@ function circle (x, y, r) {
 }
 
 function circle2 (x, y, r) {
-  var X = interval_to_raf(x);
-  var Y = interval_to_raf(y);
-
-  return raf_add_const(raf_add(raf_mul(X, X), raf_mul(Y, Y)), r[0][0] * -1);
+  return raf_add_const(raf_add(raf_mul(x, x), raf_mul(y, y)), r[0][0] * -1);
 }
 
 circle2.helper = circle.helper = function circleHelper(ctx) {
@@ -329,12 +325,7 @@ function rect (x, y, args) {
 }
 
 function rect2 (x, y, args) {
-  var X = interval_to_raf(x);
-  var Y = interval_to_raf(y);
-
-  //return raf_max(raf_sub(raf_abs(x), args[0]), raf_sub(raf_abs(y), args[1]));
-  //return raf_max(raf_sub_const(raf_abs(X), args[0]), raf_sub_const(raf_abs(Y), args[1]));
-  return raf_max(raf_abs(X), raf_abs(Y));
+  return raf_max(raf_sub_const(raf_abs(x), args[0][0]), raf_sub_const(raf_abs(y), args[1][1]));
 }
 
 rect2.helper = rect.helper = function rectHelper(ctx) {
@@ -513,7 +504,7 @@ window.addEventListener('mousemove', function mousemove (e) {
   ctx.dirty();
 })
 
-var keyboard = { shape: circle2, radius: 10, debug: true }
+var keyboard = { shape: rect2, radius: 10, debug: true }
 window.addEventListener('keydown', function keydown (e) {
   keyboard[e.which] = true;
   ctx.dirty()
@@ -563,7 +554,7 @@ function addShape(cx, cy) {
 
 var shapes = [];
 
-//addShape(20, 20)
+//addShape(0, 0)
 // addShape(10, 20)
 // addShape(100, 100)
 
@@ -627,8 +618,8 @@ function evaluateScene (depth, inputShapes, x, y, translation, outFilteredShapes
     vec2.transformMat3(vuu, vuu, inverted);
 
     distanceInterval = c.fn(
-      [min(vll[0], vlu[0], vul[0], vuu[0]), max(vll[0], vlu[0], vul[0], vuu[0])],
-      [min(vll[1], vlu[1], vul[1], vuu[1]), max(vll[1], vlu[1], vul[1], vuu[1])],
+      interval_to_raf([min(vll[0], vlu[0], vul[0], vuu[0]), max(vll[0], vlu[0], vul[0], vuu[0])]),
+      interval_to_raf([min(vll[1], vlu[1], vul[1], vuu[1]), max(vll[1], vlu[1], vul[1], vuu[1])]),
       c.args
     );
 
