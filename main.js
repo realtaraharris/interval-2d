@@ -116,6 +116,22 @@ function raf_max (x, y) {
   }
 }
 
+function raf_min (a, b, out) {
+  out = out || [];
+
+  var rad_a = Math.abs(a[1]) + a[2];
+  var rad_b = Math.abs(b[1]) + b[2];
+
+  var tmp0 = min(a[0] - rad_a, b[0] - rad_b);
+  var tmp1 = min(a[0] + rad_a, b[0] + rad_b);
+
+  out[0] = (tmp1 + tmp0) * 0.5;
+  out[1] = (tmp1 - tmp0) * 0.5;
+  out[2] = 0;
+
+  return out;
+}
+
 // var nnn = [0, 7];
 // var mmm = [2, 8];
 
@@ -627,16 +643,10 @@ function evaluateScene (depth, inputShapes, x, y, translation, outFilteredShapes
       outFilteredShapes.push(c)
     }
 
-// console.log('distanceInterval:', distanceInterval)
-// console.log('raf_to_interval(distanceInterval):', raf_to_interval(distanceInterval))
-
-    var out = [0, 0];
-    imin(raf_to_interval(distanceInterval), raf_to_interval(r), out);
-    r = interval_to_raf(out);
+    var out = [0, 0, 0];
+    raf_min(distanceInterval, r, out);
+    r = out;
   }
-
-// console.log('r:', r)
-// console.log('raf_to_interval(r):', raf_to_interval(r))
 
   inout(ctx, raf_to_interval(r), x, y, inputShapes.length, checkHit(inputShapes));
 
