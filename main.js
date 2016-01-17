@@ -4,7 +4,7 @@ var mat3 = glm.mat3;
 var vec2 = glm.vec2;
 var drawCircle = require('ctx-circle');
 var center = require('ctx-translate-center');
-//var iadd = require('interval-add');
+var iadd = require('interval-add');
 var isub = require('interval-subtract');
 var imul = require('interval-multiply');
 var imin = require('interval-min');
@@ -19,6 +19,10 @@ function interval_to_raf (i) {
     (i[1] - i[0]) * 0.5,
     0
   ];
+}
+
+function raf_abs (a) {
+  return interval_to_raf(iabs(raf_to_interval(a)));
 }
 
 function raf_radius (a) {
@@ -37,8 +41,24 @@ function raf_add (a, b) {
 function raf_mul (a, b) {
   return [
     a[0] * b[0],
-    a[0]*b[1] + b[0]*a[1],
-    Math.abs(a[0]*b[2]) + Math.abs(b[0]*a[2]) + raf_radius(a)*raf_radius(b)
+    (a[0] * b[1]) + (b[0] * a[1]),
+    Math.abs(a[0] * b[2]) + Math.abs(b[0] * a[2]) + (raf_radius(a) * raf_radius(b))
+  ];
+}
+
+function raf_mul_fryazinov (a, b) {
+  return [
+    a[0] * b[0] + 0.5 * a[1] * b[1],
+    a[0] * b[1] + b[0] * a[1],
+    a[2] * b[2] + b[2] * (Math.abs(a[0]) + Math.abs(a[1])) + a[2] * (Math.abs(b[0]) + Math.abs(b[1])) + 0.5 * Math.abs(a[1] * b[1])
+  ];
+}
+
+function raf_sub (a, b) {
+  return [
+    a[0] - b[0],
+    a[1] - b[1],
+    a[2] + b[2]
   ];
 }
 
@@ -52,29 +72,102 @@ function raf_add_const (a, t) {
   return re;
 }
 
-function iadd (a, b, out) {
-  out = out || [0, 0];
-
-  var ra = interval_to_raf(a);
-  var rb = interval_to_raf(b);
-
-  var tmp = raf_add(ra, rb);
-
-  out = raf_to_interval(tmp);
-  return out;
+function raf_sub_const (a, t) {
+  var re = a;
+  re[0] = re[0] - t;
+  return re;
 }
 
-function imul (a, b, out) {
-  out = out || [0, 0];
+function raf_max (x, y) {
+  var x1abs = Math.abs(x[1]);
+  var y1abs = Math.abs(y[1]);
 
-  var ra = interval_to_raf(a);
-  var rb = interval_to_raf(b);
+  var a0 = x[0] - x1abs + x[2];
+  var a1 = x[0] + x1abs + x[2];
+  var b0 = y[0] - y1abs + y[2];
+  var b1 = y[0] + y1abs + y[2];
 
-  var tmp = raf_mul(ra, rb);
+  if (a1 <= b0) {
+    return [ (b1 + b0) * 0.5, (b1 - b0) * 0.5, 0 ];
+  }
 
-  out = raf_to_interval(tmp);
-  return out;
+  if (a0 <= b0) {
+    if (b0 <= a1) {
+      if (a1 <= b1) {
+        return [ (b1 + b0) * 0.5, (b1 - b0) * 0.5, 0 ];
+      } else {
+        return [ (a1 + b0) * 0.5, (a1 - b0) * 0.5, 0 ];
+      }
+    }
+  }
+
+  if (b1 <= a0) {
+    return [ (a1 + a0) * 0.5, (a1 - a0) * 0.5, 0 ];
+  }
+
+  if (b0 <= a0) {
+    if (a0 <= b1) {
+      if (b1 <= a1) {
+        return [ (a1 + a0) * 0.5, (a1 - a0) * 0.5, 0 ];
+      } else {
+        return [ (b1 + a0) * 0.5, (b1 - a0) * 0.5, 0 ];
+      }
+    }
+  }
 }
+
+var nnn = [0, 7];
+var mmm = [2, 8];
+
+console.log('raf_max:', raf_to_interval(raf_max(interval_to_raf(mmm), interval_to_raf(nnn))))
+console.log('imax, with conversion:', imax(raf_to_interval(interval_to_raf(mmm)), raf_to_interval(interval_to_raf(nnn))))
+console.log('imax, vanilla:', imax(mmm, nnn))
+
+nnn = [-10, 7];
+mmm = [2, 8];
+
+console.log('raf_max:', raf_to_interval(raf_max(interval_to_raf(mmm), interval_to_raf(nnn))))
+console.log('imax, with conversion:', imax(raf_to_interval(interval_to_raf(mmm)), raf_to_interval(interval_to_raf(nnn))))
+console.log('imax, vanilla:', imax(mmm, nnn))
+
+nnn = [10, 70];
+mmm = [2, 8];
+
+console.log('raf_max:', raf_to_interval(raf_max(interval_to_raf(mmm), interval_to_raf(nnn))))
+console.log('imax, with conversion:', imax(raf_to_interval(interval_to_raf(mmm)), raf_to_interval(interval_to_raf(nnn))))
+console.log('imax, vanilla:', imax(mmm, nnn))
+
+
+nnn = [-70, -10];
+mmm = [2, 8];
+
+console.log('raf_max:', raf_to_interval(raf_max(interval_to_raf(mmm), interval_to_raf(nnn))))
+console.log('imax, with conversion:', imax(raf_to_interval(interval_to_raf(mmm)), raf_to_interval(interval_to_raf(nnn))))
+console.log('imax, vanilla:', imax(mmm, nnn))
+
+// function iadd (a, b, out) {
+//   out = out || [0, 0];
+
+//   var ra = interval_to_raf(a);
+//   var rb = interval_to_raf(b);
+
+//   var tmp = raf_add(ra, rb);
+
+//   out = raf_to_interval(tmp);
+//   return out;
+// }
+
+// function imul (a, b, out) {
+//   out = out || [0, 0];
+
+//   var ra = interval_to_raf(a);
+//   var rb = interval_to_raf(b);
+
+//   var tmp = raf_mul(ra, rb);
+
+//   out = raf_to_interval(tmp);
+//   return out;
+// }
 
 var once = true
 function isqr (a) {
@@ -88,11 +181,11 @@ function isqr (a) {
 }
 
 
-console.log(iadd([-1, 4], [3, 10]));
-console.log(iadd([1, 3], [0, 4]));
+// console.log(iadd([-1, 4], [3, 10]));
+// console.log(iadd([1, 3], [0, 4]));
 
-console.log(imul([1, 2], [2, 3]));
-console.log(imul([-1, 3], [-1, 3]));
+// console.log(imul([1, 2], [2, 3]));
+// console.log(imul([-1, 3], [-1, 3]));
 
 
 function hsl(h, s, l) {
@@ -235,7 +328,16 @@ function rect (x, y, args) {
   return imax(isub(iabs(x), args[0]), isub(iabs(y), args[1]));
 }
 
-rect.helper = function rectHelper(ctx) {
+function rect2 (x, y, args) {
+  var X = interval_to_raf(x);
+  var Y = interval_to_raf(y);
+
+  //return raf_max(raf_sub(raf_abs(x), args[0]), raf_sub(raf_abs(y), args[1]));
+  //return raf_max(raf_sub_const(raf_abs(X), args[0]), raf_sub_const(raf_abs(Y), args[1]));
+  return raf_max(raf_abs(X), raf_abs(Y));
+}
+
+rect2.helper = rect.helper = function rectHelper(ctx) {
   var r = keyboard.radius;
   ctx.strokeStyle = "#FF0073"
   ctx.strokeRect(
@@ -307,6 +409,10 @@ function box (inputShapes, translation, lx, ly, ux, uy, ctx, scale, depth, fn) {
   var maxDepth = depth;
   var work = inputShapes.length;
 
+  if (max(ux - lx, uy - ly) * scale < 1) {
+    return depth + 1;
+  }
+
   var midx = middle(lx, ux);
   var midy = middle(ly, uy);
   var r;
@@ -317,13 +423,9 @@ function box (inputShapes, translation, lx, ly, ux, uy, ctx, scale, depth, fn) {
   var upperRightShapes = []
   r = fn(depth, inputShapes, scratchx, scratchy, translation, upperRightShapes);
   if (crossesZero(r)) { // upper-right
-   if (max(ux - midx, uy - midy) * scale >= 1) {
-      maxDepth = max(maxDepth,
-        box(upperRightShapes, translation, midx, midy, ux, uy, ctx, scale, depth + 1, fn)
-      );
-    } else {
-      return depth + 1;
-    }
+    maxDepth = max(maxDepth,
+      box(upperRightShapes, translation, midx, midy, ux, uy, ctx, scale, depth + 1, fn)
+    );
   }
 
   iset(scratchx, lx, midx);
@@ -331,13 +433,9 @@ function box (inputShapes, translation, lx, ly, ux, uy, ctx, scale, depth, fn) {
   var upperLeftShapes = []
   r = fn(depth, inputShapes, scratchx, scratchy, translation, upperLeftShapes);
   if (crossesZero(r)) { // upper-left
-    if (max(midx - lx, uy - midy) * scale >= 1) {
-      maxDepth = max(maxDepth,
-        box(upperLeftShapes, translation, lx, midy, midx, uy, ctx, scale, depth + 1, fn)
-      );
-    } else {
-      return depth + 1;
-    }
+    maxDepth = max(maxDepth,
+      box(upperLeftShapes, translation, lx, midy, midx, uy, ctx, scale, depth + 1, fn)
+    );
   }
 
   iset(scratchx, lx, midx);
@@ -345,13 +443,9 @@ function box (inputShapes, translation, lx, ly, ux, uy, ctx, scale, depth, fn) {
   var lowerRightShapes = [];
   r = fn(depth, inputShapes, scratchx, scratchy, translation, lowerRightShapes);
   if (crossesZero(r)) { // lower-right
-    if (max(midx - lx, midy - ly) * scale >= 1) {
-      maxDepth = max(maxDepth,
-        box(lowerRightShapes, translation, lx, ly, midx, midy, ctx, scale, depth + 1, fn)
-      );
-    } else {
-      return depth + 1;
-    }
+    maxDepth = max(maxDepth,
+      box(lowerRightShapes, translation, lx, ly, midx, midy, ctx, scale, depth + 1, fn)
+    );
   }
 
   iset(scratchx, midx, ux);
@@ -359,13 +453,9 @@ function box (inputShapes, translation, lx, ly, ux, uy, ctx, scale, depth, fn) {
   var lowerLeftShapes = [];
   r = fn(depth, inputShapes, scratchx, scratchy, translation, lowerLeftShapes);
   if (crossesZero(r)) { // lower-left
-    if (max(ux - midx, midy - ly) * scale >= 1) {
-      maxDepth = max(maxDepth,
-        box(lowerLeftShapes, translation, midx, ly, ux, midy, ctx, scale, depth + 1, fn)
-      );
-    } else {
-      return depth + 1;
-    }
+    maxDepth = max(maxDepth,
+      box(lowerLeftShapes, translation, midx, ly, ux, midy, ctx, scale, depth + 1, fn)
+    );
   }
 
   return maxDepth;
@@ -429,7 +519,7 @@ window.addEventListener('keydown', function keydown (e) {
   ctx.dirty()
   // r
   if (e.which === 82) {
-    keyboard.shape = rect;
+    keyboard.shape = rect2;
   // c
   } else if (e.which === 67) {
     keyboard.shape = circle2;
@@ -473,7 +563,7 @@ function addShape(cx, cy) {
 
 var shapes = [];
 
-addShape(20, 20)
+//addShape(20, 20)
 // addShape(10, 20)
 // addShape(100, 100)
 
@@ -541,14 +631,21 @@ function evaluateScene (depth, inputShapes, x, y, translation, outFilteredShapes
       [min(vll[1], vlu[1], vul[1], vuu[1]), max(vll[1], vlu[1], vul[1], vuu[1])],
       c.args
     );
+
     if (crossesZero(distanceInterval)) {
       outFilteredShapes.push(c)
     }
+
+// console.log('distanceInterval:', distanceInterval)
+// console.log('raf_to_interval(distanceInterval):', raf_to_interval(distanceInterval))
 
     var out = [0, 0];
     imin(raf_to_interval(distanceInterval), raf_to_interval(r), out);
     r = interval_to_raf(out);
   }
+
+// console.log('r:', r)
+// console.log('raf_to_interval(r):', raf_to_interval(r))
 
   inout(ctx, raf_to_interval(r), x, y, inputShapes.length, checkHit(inputShapes));
 
