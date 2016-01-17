@@ -196,6 +196,10 @@ function inout(ctx, r, ix, iy, work, hit) {
     } else if (keyboard.debug && r[0] <= 0 && r[1] <= 0) {
       ctx.fillStyle = hsl(work, 100,  50);
       ctx.fillRect(ix[0], iy[0], (ix[1] - ix[0]), (iy[1] - iy[0]));
+      ctx.lineWidth = (1/scale) / 4;
+      ctx.strokeStyle = "black";
+      ctx.strokeRect(ix[0], iy[0], (ix[1] - ix[0]), (iy[1] - iy[0]));
+
     } else if (r[0] <= 0 && r[1] >= 0 && size < (1 / mouse.zoom)) {
       ctx.fillStyle = 'white'
       ctx.fillRect(ix[0]+1/scale, iy[0]+1/scale, (ix[1] - ix[0])-2/scale, (iy[1] - iy[0])-2/scale);
@@ -366,6 +370,20 @@ function addShape(cx, cy, radius) {
 
   var r = ival(radius || keyboard.radius);
 
+  var filteredShapes = [];
+  var res = evaluateScene(
+    0,
+    shapes,
+    [cx - r[0], cx + r[0]],
+    [cy - r[0], cy + r[0]],
+    [0, 0],
+    filteredShapes
+  );
+
+  if (res[0] < 0 && res[1] < 0) {
+    return;
+  }
+
   shapes.push({
     fn: keyboard.shape,
     args: [r, r],
@@ -377,29 +395,7 @@ function addShape(cx, cy, radius) {
 }
 
 var shapes = [];
-
-// addShape(0, 0, 50, 10)
-// addShape(50, 0, 10, 10)
-// addShape(0, 50, 10, 10)
-// addShape(0, -50, 10, 10)
-// addShape(-50, 0, 10, 10)
-
-for (var x = -500; x<=500; x+=10) {
-  for (var y = -200; y<=200; y+=10) {
-    addShape(x, y, 10, 10);//shapes.push([x, y, 10])
-  }
-}
-
-// setInterval(function() {
-//   mat3.rotate(shapes[0].transform, shapes[0].transform, Math.PI/100)
-//   var s = 1 - Math.sin(Date.now() / 1000) / 50;
-//   mat3.scale(shapes[0].transform, shapes[0].transform, [s, s])
-
-//   ctx.dirty()
-// }, 16);
-
-
-
+var groups = [];
 var translation = [0, 0];
 var inverted = mat3.create();
 
@@ -411,7 +407,7 @@ function checkHit (shapes) {
   }
 }
 
-var groups = [];
+
 function evaluateScene (depth, inputShapes, x, y, translation, outFilteredShapes) {
   if (!groups[depth]) {
     groups.push([]);
@@ -468,19 +464,19 @@ var ctx = fc(function tick (dt) {
   var uy =  hh;
 
   if (keyboard[39]) {
-    mouse.translate[0] += 10 / mouse.zoom;
+    mouse.translate[0] += 50 / mouse.zoom;
   }
 
   if (keyboard[37]) {
-    mouse.translate[0] -= 10 / mouse.zoom;
+    mouse.translate[0] -= 50 / mouse.zoom;
   }
 
   if (keyboard[40]) {
-    mouse.translate[1] += 10 / mouse.zoom;
+    mouse.translate[1] += 50 / mouse.zoom;
   }
 
   if (keyboard[38]) {
-    mouse.translate[1] -= 10 / mouse.zoom;
+    mouse.translate[1] -= 50 / mouse.zoom;
   }
 
   translation[0] = mouse.translate[0];
@@ -511,10 +507,23 @@ var ctx = fc(function tick (dt) {
   keyboard.shape.helper(ctx);
   ctx.restore()
 
-
   ctx.fillStyle = "white";
   ctx.font = "12px monospace"
   ctx.fillText('shapes: ' + localShapes.length + '/' + shapes.length, 10, 20);
   ctx.fillText('ms: ' + (Date.now() - renderStart), 10, 40);
 
 }, false);
+
+// for (var x = -500; x<=500; x+=10) {
+//   for (var y = -200; y<=200; y+=10) {
+//     addShape(x, y, 10, 10);//shapes.push([x, y, 10])
+//   }
+// }
+
+
+
+addShape(0, 0, 50)
+addShape(50, 0, 10, 10)
+addShape(0, 50, 10, 10)
+addShape(0, -50, 10, 10)
+addShape(-50, 0, 10, 10)

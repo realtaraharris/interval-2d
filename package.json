@@ -3,7 +3,7 @@
   "license": "MIT",
   "repository": "https://github.com/maxharris9/interval-2d",
   "scripts": {
-    "start": "budo main.js --live",
+    "start": "budo main.js --live --no-debug",
     "test": "tape test-*.js"
   },
   "dependencies": {
@@ -16,7 +16,7 @@
     "interval-subtract": "^1.0.0"
   },
   "devDependencies": {
-    "budo": "^5.1.0",
+    "budo": "^7.1.0",
     "ctx-circle": "^1.0.0",
     "ctx-translate-center": "^1.0.0",
     "interval-min": "^1.0.0",
