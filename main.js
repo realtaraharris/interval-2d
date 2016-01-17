@@ -235,6 +235,28 @@ function sign(a) {
 //   return [pa[0] + pb[0], pa[1] + pb[1]]
 // }
 
+function raf_sqr (a) {
+  return raf_mul(a, a);
+}
+
+function raf_sqrt (x) {
+  var rad_x = Math.abs(x[1]) + x[2];
+  var f = x[0] - rad_x;
+  var g = x[0] + rad_x;
+
+  var i0 = f > 0 ? Math.sqrt(f) : 0;
+  var i1 = g > 0 ? Math.sqrt(g) : 0;
+
+  return [ (i1 + i0) * 0.5, (i1 - i0) * 0.5, 0 ];
+}
+
+function raf_len (a, b) {
+  var pa = raf_sqr(a);
+  var pb = raf_sqr(b);
+
+  return raf_sqrt(raf_add(pa, pb));
+}
+
 function isqrt(a) {
   return [Math.sqrt(a[0]), Math.sqrt(a[1])];
 }
@@ -330,7 +352,7 @@ function circle (x, y, r) {
 }
 
 function circle2 (x, y, r) {
-  return raf_add_const(raf_add(raf_mul(x, x), raf_mul(y, y)), r[0][0] * -1);
+  return raf_sub_const(raf_len(x, y), r[0][0]);
 }
 
 circle2.helper = circle.helper = function circleHelper(ctx) {
