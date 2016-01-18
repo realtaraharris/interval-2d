@@ -566,18 +566,19 @@ var ctx = fc(function tick (dt) {
   ctx.lineWidth = 1/mouse.zoom
 
   var results = shapeGroupings.map(function(g) {
-    ctx.strokeStyle = "#F300FF"
-    ctx.strokeRect(
-      g.bounds[0][0],
-      g.bounds[0][1],
-      g.bounds[1][0] - g.bounds[0][0],
-      g.bounds[1][1] - g.bounds[0][1]
-    );
 
-    var lx = max(-hw, g.bounds[0][0] + translation[0]);
-    var ly = max(-hh, g.bounds[0][1] + translation[1]);
-    var ux = min(hw, g.bounds[1][0] + translation[0]);
-    var uy = min(hh, g.bounds[1][1] + translation[1]);
+    var lx = g.bounds[0][0] + translation[0]
+    var ly = g.bounds[0][1] + translation[1]
+    var ux = g.bounds[1][0] + translation[0]
+    var uy = g.bounds[1][1] + translation[1]
+
+    ctx.strokeStyle = "#F300FF"
+    ctx.strokeRect(lx, ly, ux - lx, uy - ly);
+
+    lx = max(-hw, lx);
+    ly = max(-hh, ly);
+    ux = min( hw, ux);
+    uy = min( hh, uy);
     var localShapes = [];
 
     evaluateScene(0, g.shapes, [lx, ux], [ly, uy], translation, localShapes)
