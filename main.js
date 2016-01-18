@@ -204,10 +204,7 @@ function inout(ctx, r, ix, iy, work, hit) {
     ctx.lineWidth = 1/scale;
     var size = max(ix[1] - ix[0], iy[1] - iy[0]);
 
-    if (hit && r[0] <= 0 && r[1] <= 0) {
-      ctx.fillStyle = 'green';//"hsla(14, 100%, 55%, 1)"
-      ctx.fillRect(ix[0], iy[0], (ix[1] - ix[0]), (iy[1] - iy[0]));
-    } else if (keyboard.debug && r[0] <= 0 && r[1] <= 0) {
+    if (keyboard.debug && r[0] <= 0 && r[1] <= 0) {
       ctx.fillStyle = hsl(work, 100,  50);
       ctx.fillRect(ix[0], iy[0], (ix[1] - ix[0]), (iy[1] - iy[0]));
       ctx.lineWidth = (1/scale) / 4;
@@ -394,9 +391,9 @@ function addShape(cx, cy, radius) {
     filteredShapes
   );
 
-  if (res[0] < 0 && res[1] < 0) {
-    return;
-  }
+  // if (res[0] <= 0 && res[1] <= 0) {
+  //   return;
+  // }
 
   shapes.push({
     fn: keyboard.shape,
@@ -423,10 +420,10 @@ function checkHit (shapes) {
 
 
 function evaluateScene (depth, inputShapes, x, y, translation, outFilteredShapes) {
-  if (!groups[depth]) {
-    groups.push([]);
-  }
-  groups[depth].push(inputShapes.length)
+  // if (!groups[depth]) {
+  //   groups.push([]);
+  // }
+  // groups[depth].push(inputShapes.length)
 
   var l = inputShapes.length;
   var r = ival(1);
@@ -453,16 +450,79 @@ function evaluateScene (depth, inputShapes, x, y, translation, outFilteredShapes
       c.args
     );
 
-    if (crossesZero(distanceInterval)) {
-      outFilteredShapes.push(c)
-    }
-
     imin(distanceInterval, r, r);
+    if (crossesZero(distanceInterval)) {
+      outFilteredShapes && outFilteredShapes.push(c)
+    } else if (distanceInterval[0] <= 0) {
+      break
+    }
   }
 
   inout(ctx, r, x, y, min(inputShapes.length / 10, 1), checkHit(inputShapes));
 
   return r;
+}
+
+function mergeBoundsInto(src, dest) {
+  dest[0][0] = min(src[0][0], dest[0][0]);
+  dest[0][1] = min(src[0][1], dest[0][1]);
+  dest[1][0] = max(src[1][0], dest[1][0]);
+  dest[1][1] = max(src[1][1], dest[1][1]);
+}
+
+function buildGroupings(shapes) {
+  var lgs = [];
+
+  var l = shapes.length;
+
+  for (var i=0; i<l; i++) {
+    var shape = shapes[i];
+
+    var pos = [0, 0];
+    vec2.transformMat3(pos, pos, shape.transform);
+
+    // TODO: bake this into each shape, not just circles
+    var rx = shape.args[0][0];
+    var ry = shape.args[0][0];
+    var x = [pos[0] - rx, pos[0] + rx]
+    var y = [pos[1] - ry, pos[1] + ry]
+
+    ctx.strokeStyle = "limegreen"
+    ctx.strokeRect(x[0], y[0], x[1]-x[0], y[1]-y[0]);
+
+    // figure out if this shape is apart of a group
+    var contrib = lgs.filter(function(g) {
+      var r = evaluateScene(0, g.shapes, x, y, [0, 0])
+console.log('result', r, 'shapes', g.shapes.length);
+      if (r[0] <= 0) {
+
+        if (r[1] >= 0) {
+          g.shapes.unshift(shape);
+        } else {
+          g.shapes.push(shape);
+        }
+
+        mergeBoundsInto([
+          [x[0], y[0]],
+          [x[1], y[1]]
+        ], g.bounds)
+        return true
+      } else {
+        return false;
+      }
+    });
+
+    if (!contrib.length) {
+      lgs.push({ shapes: [shape], bounds: [[Infinity, Infinity], [-Infinity, -Infinity]] })
+    } else if (contrib.length === 1) {
+
+    } else {
+      // TODO: multiple contributions, merge lists?
+      console.log('merge')
+    }
+  }
+console.log('lgs', lgs)
+  return lgs;
 }
 
 var ctx = fc(function tick (dt) {
@@ -472,10 +532,7 @@ var ctx = fc(function tick (dt) {
   var hw = (ctx.canvas.width / 2) / mouse.zoom;
   var hh = (ctx.canvas.height / 2) / mouse.zoom;
 
-  var lx = -hw;
-  var ly = -hh;
-  var ux =  hw;
-  var uy =  hh;
+
 
   if (keyboard[39]) {
     mouse.translate[0] += 50 / mouse.zoom;
@@ -499,7 +556,8 @@ var ctx = fc(function tick (dt) {
   ctx.clear('black');
 
   var localShapes = []
-  evaluateScene(0, shapes, [lx, ux], [ly, uy], translation, localShapes)
+
+  // evaluateScene(0, shapes, [lx, ux], [ly, uy], translation, localShapes)
 
   ctx.strokeStyle = 'rgba(255,5,5, 0.25)';
   center(ctx);
@@ -507,8 +565,33 @@ var ctx = fc(function tick (dt) {
   ctx.scale(mouse.zoom, mouse.zoom)
   ctx.lineWidth = 1/mouse.zoom
 
-  box(shapes, translation, lx, ly, ux, uy, ctx, mouse.zoom, 0, evaluateScene);
+  shapeGroupings.forEach(function(g) {
+    ctx.strokeStyle = "#F300FF"
+    ctx.strokeRect(
+      g.bounds[0][0],
+      g.bounds[0][1],
+      g.bounds[1][0] - g.bounds[0][0],
+      g.bounds[1][1] - g.bounds[0][1]
+    );
 
+    var lx = g.bounds[0][0] + translation[0];
+    var ly = g.bounds[0][1] + translation[1];
+    var ux = g.bounds[1][0] + translation[0];
+    var uy = g.bounds[1][1] + translation[1];
+
+    box(
+      g.shapes,
+      translation,
+      lx,
+      ly,
+      ux,
+      uy,
+      ctx,
+      mouse.zoom,
+      0,
+      evaluateScene
+    );
+  })
   // groups.forEach(function(group, i) {
   //   var sum = group.reduce(function(p, c) {
   //     return p + c
@@ -534,10 +617,22 @@ var ctx = fc(function tick (dt) {
 //   }
 // }
 
+for (var i=-200; i<200; i+=60) {
+
+  addShape(i, 0, 50)
+  addShape(i+50, 0, 10, 10)
+  addShape(i, 50, 10, 10)
+  addShape(i, -50, 10, 10)
+  addShape(i-50, 0, 10, 10)
+
+}
 
 
-addShape(0, 0, 50)
-addShape(50, 0, 10, 10)
-addShape(0, 50, 10, 10)
-addShape(0, -50, 10, 10)
-addShape(-50, 0, 10, 10)
+  addShape(0, 0, 50)
+  addShape(+50, 0, 10, 10)
+  addShape(0, 50, 10, 10)
+  addShape(20, 20, 10, 10)
+  addShape(0, -50, 10, 10)
+  addShape(-50, 0, 10, 10)
+
+var shapeGroupings = buildGroupings(shapes);
