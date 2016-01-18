@@ -221,76 +221,37 @@ function inout(ctx, r, ix, iy, work, hit) {
   return r;
 }
 
+function processRect(fn, depth, inputShapes, lx, ly, ux, uy, translation, scale) {
+  var tmp = []
+
+  iset(scratchx, lx, ux);
+  iset(scratchy, ly, uy);
+
+  var r = fn(depth, inputShapes, scratchx, scratchy, translation, tmp);
+  if (crossesZero(r)) {
+    box(tmp, translation, lx, ly, ux, uy, ctx, scale, depth + 1, fn)
+  }
+}
+
 var scratchx = [0, 0];
 var scratchy = [0, 0];
 function box (inputShapes, translation, lx, ly, ux, uy, ctx, scale, depth, fn) {
-  var maxDepth = depth;
   var work = inputShapes.length;
 
   var midx = middle(lx, ux);
   var midy = middle(ly, uy);
   var r;
 
-  iset(scratchx, midx, ux);
-  iset(scratchy, midy, uy);
-
-  var upperRightShapes = []
-  r = fn(depth, inputShapes, scratchx, scratchy, translation, upperRightShapes);
-  if (crossesZero(r)) { // upper-right
-    if (max(ux - midx, uy - midy) * scale >= 1) {
-      maxDepth = max(maxDepth,
-        box(upperRightShapes, translation,
-          midx, midy, ux, uy,
-          ctx, scale, depth + 1, fn)
-      );
-    } else {
-      return depth + 1;
-    }
+  if (max(midx - lx, uy - midy) * scale <= .5) {
+    return;
   }
 
-  iset(scratchx, lx, midx);
-  iset(scratchy, midy, uy);
-  var upperLeftShapes = []
-  r = fn(depth, inputShapes, scratchx, scratchy, translation, upperLeftShapes);
-  if (crossesZero(r)) { // upper-left
-    if (max(midx - lx, uy - midy) * scale >= 1) {
-      maxDepth = max(maxDepth,
-        box(upperLeftShapes, translation, lx, midy, midx, uy, ctx, scale, depth + 1, fn)
-      );
-    } else {
-      return depth + 1;
-    }
-  }
+  depth++;
 
-  iset(scratchx, lx, midx);
-  iset(scratchy, ly, midy);
-  var lowerRightShapes = [];
-  r = fn(depth, inputShapes, scratchx, scratchy, translation, lowerRightShapes);
-  if (crossesZero(r)) { // lower-right
-    if (max(midx - lx, midy - ly) * scale >= 1) {
-      maxDepth = max(maxDepth,
-        box(lowerRightShapes, translation, lx, ly, midx, midy, ctx, scale, depth + 1, fn)
-      );
-    } else {
-      return depth + 1;
-    }
-  }
-
-  iset(scratchx, midx, ux);
-  iset(scratchy, ly, midy);
-  var lowerLeftShapes = [];
-  r = fn(depth, inputShapes, scratchx, scratchy, translation, lowerLeftShapes);
-  if (crossesZero(r)) { // lower-left
-    if (max(ux - midx, midy - ly) * scale >= 1) {
-      maxDepth = max(maxDepth,
-        box(lowerLeftShapes, translation, midx, ly, ux, midy, ctx, scale, depth + 1, fn)
-      );
-    } else {
-      return depth + 1;
-    }
-  }
-
-  return maxDepth;
+  processRect(fn, depth, inputShapes, midx, midy, ux, uy, translation, scale)
+  processRect(fn, depth, inputShapes, lx, midy, midx, uy, translation, scale)
+  processRect(fn, depth, inputShapes, lx, ly, midx, midy, translation, scale)
+  processRect(fn, depth, inputShapes, midx, ly, ux, midy, translation, scale)
 }
 
 var mouse = {
