@@ -555,7 +555,7 @@ var ctx = fc(function tick (dt) {
 
   ctx.clear('black');
 
-  var localShapes = []
+  // var localShapes = []
 
   // evaluateScene(0, shapes, [lx, ux], [ly, uy], translation, localShapes)
 
@@ -565,7 +565,7 @@ var ctx = fc(function tick (dt) {
   ctx.scale(mouse.zoom, mouse.zoom)
   ctx.lineWidth = 1/mouse.zoom
 
-  shapeGroupings.forEach(function(g) {
+  var results = shapeGroupings.map(function(g) {
     ctx.strokeStyle = "#F300FF"
     ctx.strokeRect(
       g.bounds[0][0],
@@ -574,13 +574,16 @@ var ctx = fc(function tick (dt) {
       g.bounds[1][1] - g.bounds[0][1]
     );
 
-    var lx = g.bounds[0][0] + translation[0];
-    var ly = g.bounds[0][1] + translation[1];
-    var ux = g.bounds[1][0] + translation[0];
-    var uy = g.bounds[1][1] + translation[1];
+    var lx = max(-hw, g.bounds[0][0] + translation[0]);
+    var ly = max(-hh, g.bounds[0][1] + translation[1]);
+    var ux = min(hw, g.bounds[1][0] + translation[0]);
+    var uy = min(hh, g.bounds[1][1] + translation[1]);
+    var localShapes = [];
+
+    evaluateScene(0, g.shapes, [lx, ux], [ly, uy], translation, localShapes)
 
     box(
-      g.shapes,
+      localShapes,
       translation,
       lx,
       ly,
@@ -591,6 +594,8 @@ var ctx = fc(function tick (dt) {
       0,
       evaluateScene
     );
+
+    return localShapes.length;
   })
   // groups.forEach(function(group, i) {
   //   var sum = group.reduce(function(p, c) {
@@ -606,8 +611,10 @@ var ctx = fc(function tick (dt) {
 
   ctx.fillStyle = "white";
   ctx.font = "12px monospace"
-  ctx.fillText('shapes: ' + localShapes.length + '/' + shapes.length, 10, 20);
-  ctx.fillText('ms: ' + (Date.now() - renderStart), 10, 40);
+  ctx.fillText('ms: ' + (Date.now() - renderStart), 10, 20);
+  results.forEach(function(r, i) {
+      ctx.fillText('shapes: ' + r + '/' + shapes.length, 10, 40 + i*20);
+  })
 
 }, false);
 
@@ -617,22 +624,24 @@ var ctx = fc(function tick (dt) {
 //   }
 // }
 
-for (var i=-200; i<200; i+=60) {
+for (var x=-200; x<200; x+=30) {
 
-  addShape(i, 0, 50)
-  addShape(i+50, 0, 10, 10)
-  addShape(i, 50, 10, 10)
-  addShape(i, -50, 10, 10)
-  addShape(i-50, 0, 10, 10)
+  for (var y=-200; y<200; y += 125) {
 
+    addShape(x, y+0, 50)
+    addShape(x+50, y+0, 10, 10)
+    addShape(x, y+50, 10, 10)
+    addShape(x, y-50, 10, 10)
+    addShape(x-50, y+0, 10, 10)
+  }
 }
 
 
-  addShape(0, 0, 50)
-  addShape(+50, 0, 10, 10)
-  addShape(0, 50, 10, 10)
-  addShape(20, 20, 10, 10)
-  addShape(0, -50, 10, 10)
-  addShape(-50, 0, 10, 10)
+  // addShape(0, 0, 50)
+  // addShape(+50, 0, 10, 10)
+  // addShape(0, 50, 10, 10)
+  // addShape(20, 20, 10, 10)
+  // addShape(0, -50, 10, 10)
+  // addShape(-50, 0, 10, 10)
 
 var shapeGroupings = buildGroupings(shapes);
