@@ -328,7 +328,6 @@ window.addEventListener('mouseup', function mouseup (e) {
 
   for (var i = 0; i < clickedShapes.length; i++) {
     clickedShapeIds.push(clickedShapes[i].id);
-    console.log(clickedShapes[i].id);
   }
 
   ctx.dirty();
@@ -339,6 +338,7 @@ window.addEventListener('mousemove', function mousemove (e) {
 
   if (mouse.down) {
     addShape(mouse.pos[0], mouse.pos[1]);
+    shapeGroupings = buildGroupings(shapes);
   }
   ctx.dirty();
 })
@@ -381,19 +381,22 @@ function addShape(cx, cy, radius) {
 
   var r = ival(radius || keyboard.radius);
 
-  var filteredShapes = [];
-  var res = evaluateScene(
-    0,
-    shapes,
-    [cx - r[0], cx + r[0]],
-    [cy - r[0], cy + r[0]],
-    [0, 0],
-    filteredShapes
-  );
+  var solidCoreTests = shapeGroupings.filter(function(g) {
+    var res = evaluateScene(
+      0,
+      g.shapes,
+      [cx - r[0], cx + r[0]],
+      [cy - r[0], cy + r[0]],
+      [0, 0]
+    );
 
-  // if (res[0] <= 0 && res[1] <= 0) {
-  //   return;
-  // }
+    return res[0] <= 0 && res[1] <= 0
+  })
+
+  // new shape contributes to the solid core, ignore it.
+  if (solidCoreTests.length) {
+    return;
+  }
 
   shapes.push({
     fn: keyboard.shape,
@@ -417,7 +420,6 @@ function checkHit (shapes) {
     }
   }
 }
-
 
 function evaluateScene (depth, inputShapes, x, y, translation, outFilteredShapes) {
   // if (!groups[depth]) {
@@ -493,14 +495,9 @@ function buildGroupings(shapes) {
     // figure out if this shape is apart of a group
     var contrib = lgs.filter(function(g) {
       var r = evaluateScene(0, g.shapes, x, y, [0, 0])
-console.log('result', r, 'shapes', g.shapes.length);
-      if (r[0] <= 0) {
 
-        if (r[1] >= 0) {
-          g.shapes.unshift(shape);
-        } else {
-          g.shapes.push(shape);
-        }
+      if (r[0] <= 0) {
+        g.shapes.push(shape);
 
         mergeBoundsInto([
           [x[0], y[0]],
@@ -513,15 +510,23 @@ console.log('result', r, 'shapes', g.shapes.length);
     });
 
     if (!contrib.length) {
-      lgs.push({ shapes: [shape], bounds: [[Infinity, Infinity], [-Infinity, -Infinity]] })
-    } else if (contrib.length === 1) {
-
-    } else {
-      // TODO: multiple contributions, merge lists?
-      console.log('merge')
+      lgs.push({
+        shapes: [shape],
+        bounds: [
+          [x[0], y[0]],
+          [x[1], y[1]]
+        ]
+      });
+    } else if (contrib.length > 1) {
+      var nc = contrib.shift();
+      contrib.forEach(function(g) {
+        Array.prototype.push.apply(nc.shapes, g.shapes);
+        mergeBoundsInto(g.bounds, nc.bounds)
+        lgs.splice(lgs.indexOf(g), 1);
+      })
     }
   }
-console.log('lgs', lgs)
+
   return lgs;
 }
 
@@ -555,10 +560,6 @@ var ctx = fc(function tick (dt) {
 
   ctx.clear('black');
 
-  // var localShapes = []
-
-  // evaluateScene(0, shapes, [lx, ux], [ly, uy], translation, localShapes)
-
   ctx.strokeStyle = 'rgba(255,5,5, 0.25)';
   center(ctx);
   // ctx.translate(mouse.translate[0], mouse.translate[1]);
@@ -566,21 +567,20 @@ var ctx = fc(function tick (dt) {
   ctx.lineWidth = 1/mouse.zoom
 
   var results = shapeGroupings.map(function(g) {
+    var lx = min(g.bounds[0][0], g.bounds[1][0]) + translation[0]
+    var ly = min(g.bounds[0][1], g.bounds[1][1]) + translation[1]
+    var ux = max(g.bounds[0][0], g.bounds[1][0]) + translation[0]
+    var uy = max(g.bounds[0][1], g.bounds[1][1]) + translation[1]
 
-    var lx = g.bounds[0][0] + translation[0]
-    var ly = g.bounds[0][1] + translation[1]
-    var ux = g.bounds[1][0] + translation[0]
-    var uy = g.bounds[1][1] + translation[1]
-
-    ctx.strokeStyle = "#F300FF"
+    ctx.strokeStyle = "#666"
     ctx.strokeRect(lx, ly, ux - lx, uy - ly);
 
     lx = max(-hw, lx);
     ly = max(-hh, ly);
     ux = min( hw, ux);
     uy = min( hh, uy);
-    var localShapes = [];
 
+    var localShapes = []
     evaluateScene(0, g.shapes, [lx, ux], [ly, uy], translation, localShapes)
 
     box(
@@ -596,7 +596,7 @@ var ctx = fc(function tick (dt) {
       evaluateScene
     );
 
-    return localShapes.length;
+    return [localShapes.length, g.shapes.length];
   })
   // groups.forEach(function(group, i) {
   //   var sum = group.reduce(function(p, c) {
@@ -610,11 +610,14 @@ var ctx = fc(function tick (dt) {
   keyboard.shape.helper(ctx);
   ctx.restore()
 
+  ctx.fillStyle = "rgba(0, 0, 0, .7)";
+  ctx.fillRect(0, 0, 200, 60 + results.length * 20)
+
   ctx.fillStyle = "white";
   ctx.font = "12px monospace"
   ctx.fillText('ms: ' + (Date.now() - renderStart), 10, 20);
   results.forEach(function(r, i) {
-      ctx.fillText('shapes: ' + r + '/' + shapes.length, 10, 40 + i*20);
+      ctx.fillText('shapes: ' + r[0] + '/' + r[1], 10, 40 + i*20);
   })
 
 }, false);
@@ -626,9 +629,7 @@ var ctx = fc(function tick (dt) {
 // }
 
 for (var x=-200; x<200; x+=30) {
-
   for (var y=-200; y<200; y += 125) {
-
     addShape(x, y+0, 50)
     addShape(x+50, y+0, 10, 10)
     addShape(x, y+50, 10, 10)
