@@ -337,8 +337,10 @@ window.addEventListener('mousemove', function mousemove (e) {
   mouse.pos[1] = (e.clientY - ctx.canvas.height / 2) / mouse.zoom - mouse.translate[1];
 
   if (mouse.down) {
-    addShape(mouse.pos[0], mouse.pos[1]);
-    shapeGroupings = buildGroupings(shapes);
+    var shape = addShape(mouse.pos[0], mouse.pos[1]);
+    if (shape) {
+      buildGroupings([shape], shapeGroupings);
+    }
   }
   ctx.dirty();
 })
@@ -374,6 +376,7 @@ window.addEventListener('keyup', function keyup (e) {
 })
 
 var globalShapeId = 0;
+var shapeGroupings = [];
 function addShape(cx, cy, radius) {
 
   var transform = mat3.create();
@@ -398,14 +401,18 @@ function addShape(cx, cy, radius) {
     return;
   }
 
-  shapes.push({
+  var insert = {
     fn: keyboard.shape,
     args: [r, r],
     transform: transform,
     id: globalShapeId++
-  })
+  };
+
+  shapes.push(insert)
 
   ctx && ctx.dirty()
+
+  return insert;
 }
 
 var shapes = [];
@@ -472,8 +479,8 @@ function mergeBoundsInto(src, dest) {
   dest[1][1] = max(src[1][1], dest[1][1]);
 }
 
-function buildGroupings(shapes) {
-  var lgs = [];
+function buildGroupings(shapes, shapeGroupings) {
+  var lgs = shapeGroupings;
 
   var l = shapes.length;
 
@@ -572,8 +579,10 @@ var ctx = fc(function tick (dt) {
     var ux = max(g.bounds[0][0], g.bounds[1][0]) + translation[0]
     var uy = max(g.bounds[0][1], g.bounds[1][1]) + translation[1]
 
-    ctx.strokeStyle = "#666"
-    ctx.strokeRect(lx, ly, ux - lx, uy - ly);
+    if (keyboard.debug) {
+      ctx.strokeStyle = "#666"
+      ctx.strokeRect(lx, ly, ux - lx, uy - ly);
+    }
 
     lx = max(-hw, lx);
     ly = max(-hh, ly);
@@ -638,12 +647,13 @@ for (var x=-200; x<200; x+=30) {
   }
 }
 
-
   // addShape(0, 0, 50)
   // addShape(+50, 0, 10, 10)
   // addShape(0, 50, 10, 10)
   // addShape(20, 20, 10, 10)
   // addShape(0, -50, 10, 10)
   // addShape(-50, 0, 10, 10)
+//
 
-var shapeGroupings = buildGroupings(shapes);
+// build groups to be processed by the box evaluator
+buildGroupings(shapes, shapeGroupings);
