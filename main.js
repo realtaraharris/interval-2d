@@ -153,23 +153,28 @@ function opicut(a, b) {
   )
 }
 
-function inout(ctx, r, ix, iy) {
-  ctx.save()
-    var size = Math.max(ix[1] - ix[0], iy[1] - iy[0]);
+var stats = {
+  totalLeafOps: 0,
+  totalLeaves: 0,
+  opsPerLeaf: [],
+  reset() {
+    this.totalLeaves = 0;
+    this.totalLeafOps = 0;
+    this.opsPerLeaf.length = 0;
+  }
+};
 
-    if (r[0] < 0 && r[1] < 0) {
-      return r;
-      ctx.fillStyle = "hsla(14, 100%, 55%, .75)"
-    } else if (r[0] <= 0 && r[1] >= 0 && size < (1 / mouse.zoom)) {
-      ctx.fillStyle = 'white'
-    } else {
-      return r;
-      ctx.fillStyle = "#000"
-    }
-    ctx.fillRect(ix[0], iy[0], (ix[1] - ix[0]), (iy[1] - iy[0]));
-
-  ctx.restore();
-
+function inout(ctx, r, ix, iy, shapes) {
+  var size = Math.max(ix[1] - ix[0], iy[1] - iy[0]);
+  if (r[0] <= 0 && r[1] >= 0 && size < (1 / mouse.zoom)) {
+    ctx.fillStyle = 'white'
+    stats.totalLeafOps += shapes.length
+    stats.totalLeaves++;
+    stats.opsPerLeaf.push(shapes.length);
+  } else {
+    ctx.fillStyle = `hsla(${size}, 100%, 55%, .75)`
+  }
+  ctx.fillRect(ix[0], iy[0], (ix[1] - ix[0]), (iy[1] - iy[0]));
   return r;
 }
 
@@ -192,8 +197,8 @@ function box (inputShapes, translation, lx, ly, ux, uy, ctx, scale, depth, fn) {
 
   var upperRightShapes = []
   r = fn(inputShapes, scratchx, scratchy, translation, upperRightShapes);
-  inout(ctx, r, scratchx, scratchy);
   if (crossesZero(r)) { // upper-right
+    inout(ctx, r, scratchx, scratchy, upperRightShapes);
     maxDepth = max(maxDepth,
       box(upperRightShapes, translation, midx, midy, ux, uy, ctx, scale, depth + 1, fn)
     );
@@ -203,8 +208,8 @@ function box (inputShapes, translation, lx, ly, ux, uy, ctx, scale, depth, fn) {
   iset(scratchy, midy, uy);
   var upperLeftShapes = []
   r = fn(inputShapes, scratchx, scratchy, translation, upperLeftShapes);
-  inout(ctx, r, scratchx, scratchy);
   if (crossesZero(r)) { // upper-left
+    inout(ctx, r, scratchx, scratchy, upperLeftShapes);
     maxDepth = max(maxDepth,
       box(upperLeftShapes, translation, lx, midy, midx, uy, ctx, scale, depth + 1, fn)
     );
@@ -214,8 +219,8 @@ function box (inputShapes, translation, lx, ly, ux, uy, ctx, scale, depth, fn) {
   iset(scratchy, ly, midy);
   var lowerRightShapes = [];
   r = fn(inputShapes, scratchx, scratchy, translation, lowerRightShapes);
-  inout(ctx, r, scratchx, scratchy);
   if (crossesZero(r)) { // lower-right
+    inout(ctx, r, scratchx, scratchy, lowerRightShapes);
     maxDepth = max(maxDepth,
       box(lowerRightShapes, translation, lx, ly, midx, midy, ctx, scale, depth + 1, fn)
     );
@@ -225,8 +230,8 @@ function box (inputShapes, translation, lx, ly, ux, uy, ctx, scale, depth, fn) {
   iset(scratchy, ly, midy);
   var lowerLeftShapes = [];
   r = fn(inputShapes, scratchx, scratchy, translation, lowerLeftShapes);
-  inout(ctx, r, scratchx, scratchy);
   if (crossesZero(r)) { // lower-left
+    inout(ctx, r, scratchx, scratchy, lowerLeftShapes);
     maxDepth = max(maxDepth,
       box(lowerLeftShapes, translation, midx, ly, ux, midy, ctx, scale, depth + 1, fn)
     );
@@ -262,7 +267,7 @@ window.addEventListener('mousemove', function(e) {
     var s = [
       (e.clientX - ctx.canvas.width / 2) / mouse.zoom,
       (e.clientY - ctx.canvas.height / 2) / mouse.zoom,
-      10
+      100
     ];
 
     shapes.push(s);
@@ -274,12 +279,12 @@ var shapes = [[0, 0, 10]]
 
 var translation = [0, 0]
 var ctx = fc(function (dt) {
+  stats.reset();
+
   ctx.clear('black');
 
-  ctx.fillStyle = "white";
-  ctx.font = "12px monospace"
-  ctx.fillText('shapes: ' + shapes.length, 10, 20);
 
+  ctx.save();
 console.clear()
   console.log('rendering', shapes.length, 'shapes')
   console.time('render')
@@ -323,9 +328,26 @@ console.clear()
     return r;
   }
 
+  console.time("evaluateScene");
   box(shapes, translation, lx, ly, ux, uy, ctx, mouse.zoom, 0, evaluateScene);
+  console.timeEnd("evaluateScene");
+  ctx.restore();
+  ctx.fillStyle = "#222200"
+  ctx.fillRect(0, 0, 275, 95)
 
-  ctx.strokeStyle = "#f0f"
-  ctx.strokeRect(lx, ly, ux - lx, uy - ly);
+  ctx.fillStyle = "white";
+  ctx.font = "12px monospace"
+  ctx.fillText(`shapes: ${shapes.length} leaves: ${stats.totalLeaves} `, 10, 20);
+
+  const avg = (stats.totalLeafOps / stats.totalLeaves);
+  ctx.fillText('avg ops per leaf: ' + avg.toFixed(4), 10, 40);
+
+  var variance = stats.opsPerLeaf.reduce((p, c) => {
+    return Math.pow(c - avg, 2) + p
+  }, 0) / stats.opsPerLeaf.length
+
+  ctx.fillText('stddev: ' + (Math.sqrt(variance)).toFixed(4), 10, 60);
+  ctx.fillText(`culling efficiency: ${((1.0 - avg / shapes.length)*100).toFixed(2)}%`, 10, 80);
+
   console.timeEnd('render')
 }, false);
