@@ -167,14 +167,14 @@ var stats = {
 function inout(ctx, r, ix, iy, shapes) {
   var size = Math.max(ix[1] - ix[0], iy[1] - iy[0]);
   if (r[0] <= 0 && r[1] >= 0 && size < (1 / mouse.zoom)) {
-    ctx.fillStyle = 'white'
+
     stats.totalLeafOps += shapes.length
     stats.totalLeaves++;
     stats.opsPerLeaf.push(shapes.length);
+    ctx.fillRect(ix[0], iy[0], (ix[1] - ix[0]), (iy[1] - iy[0]));
   } else {
-    ctx.fillStyle = `hsla(${size}, 100%, 55%, .75)`
+    // ctx.fillStyle = `hsla(${size}, 100%, 55%, .75)`
   }
-  ctx.fillRect(ix[0], iy[0], (ix[1] - ix[0]), (iy[1] - iy[0]));
   return r;
 }
 
@@ -279,6 +279,13 @@ var shapes = [[0, 0, 10]]
 
 var translation = [0, 0]
 var ctx = fc(function (dt) {
+
+  const jitteredShapes = shapes.map(shape => [
+    shape[0] + Math.random() * 5.5 / mouse.zoom,
+    shape[1] + Math.random() * 5.5 / mouse.zoom,
+    shape[2]
+  ])
+
   stats.reset();
 
   ctx.clear('black');
@@ -309,6 +316,7 @@ console.clear()
   var ux =  hw;
   var uy =  hh;
 
+  ctx.fillStyle = 'white'
   function evaluateScene (inputShapes, x, y, translation, outFilteredShapes) {
     var l = inputShapes.length;
     var r = ival(1);
@@ -328,12 +336,12 @@ console.clear()
     return r;
   }
 
-  console.time("evaluateScene");
-  box(shapes, translation, lx, ly, ux, uy, ctx, mouse.zoom, 0, evaluateScene);
-  console.timeEnd("evaluateScene");
+  const start = performance.now();
+  box(jitteredShapes, translation, lx, ly, ux, uy, ctx, mouse.zoom, 0, evaluateScene);
+  const end = performance.now();
   ctx.restore();
-  ctx.fillStyle = "#222200"
-  ctx.fillRect(0, 0, 275, 95)
+  ctx.fillStyle = "#"
+  ctx.fillRect(0, 0, 275, 115)
 
   ctx.fillStyle = "white";
   ctx.font = "12px monospace"
@@ -349,5 +357,6 @@ console.clear()
   ctx.fillText('stddev: ' + (Math.sqrt(variance)).toFixed(4), 10, 60);
   ctx.fillText(`culling efficiency: ${((1.0 - avg / shapes.length)*100).toFixed(2)}%`, 10, 80);
 
+  ctx.fillText(`${((end-start)).toFixed(2)}ms`, 10, 100);
   console.timeEnd('render')
-}, false);
+}, true);
