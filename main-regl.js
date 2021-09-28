@@ -10,7 +10,7 @@ const mat4 = require('gl-mat4')
 
 var max = Math.max;
 var min = Math.min;
-
+const viewport = [0,0];
 
 const MAX_OPS = (1<<21);
 const evaluatorContext = {
@@ -272,7 +272,7 @@ window.addEventListener('mousewheel', function(e) {
     mouse.zoom = .1;
   }
   e.preventDefault();
-})
+}, {passive: false})
 
 window.addEventListener('mousedown', function(e) { mouse.down = [e.clientX, e.clientY]; })
 window.addEventListener('mouseup', function(e) {
@@ -288,8 +288,8 @@ window.addEventListener('mouseup', function(e) {
 window.addEventListener('mousemove', function(e) {
   if (mouse.down) {
     var s = [
-      (e.clientX - window.innerWidth / 2) / mouse.zoom,
-      (e.clientY - window.innerHeight / 2) / mouse.zoom,
+      (e.clientX - viewport[0]) / mouse.zoom,
+      (e.clientY - viewport[1]) / mouse.zoom,
       100
     ];
 
@@ -337,6 +337,12 @@ const drawPoints = regl({
 })
 
 regl.frame((ctx) => {
+  var w = 0.5 * ctx.viewportWidth / ctx.pixelRatio / mouse.zoom;
+  var h = 0.5 * ctx.viewportHeight / ctx.pixelRatio / mouse.zoom;
+
+  viewport[0] = 0.5 * ctx.viewportWidth / ctx.pixelRatio;
+  viewport[1] = 0.5 * ctx.viewportHeight / ctx.pixelRatio;
+
   // rebuild the point buffer
   const start = performance.now();
   {
@@ -382,8 +388,6 @@ regl.frame((ctx) => {
 
 
     box(jitteredShapes, translation, lx, ly, ux, uy, ctx, mouse.zoom, 0, evaluateScene);
-    // console.log()
-
   }
   const end = performance.now();
 
@@ -393,9 +397,6 @@ regl.frame((ctx) => {
 
   evaluatorContext.pointBuffer.subdata(evaluatorContext.points)
 
-  var w = 0.5 * ctx.viewportWidth / mouse.zoom;
-  var h = 0.5 * ctx.viewportHeight / mouse.zoom;
-  console.log("points: ", evaluatorContext.points.length, `dt: ${(end-start).toFixed(2)}ms`)
   drawPoints({
     count: evaluatorContext.points.length / 2,
     pointBuffer: evaluatorContext.pointBuffer,
@@ -404,7 +405,6 @@ regl.frame((ctx) => {
 
   // update stats
   {
-
     const log = (sel, val) => {
       var el = document.querySelector(sel)
       if (!el) {
@@ -426,7 +426,5 @@ regl.frame((ctx) => {
 
     log("#stats .stddev", 'stddev: ' + (Math.sqrt(variance)).toFixed(4));
     log("#stats .efficiency", `culling efficiency: ${((1.0 - avg / shapes.length)*100).toFixed(2)}%`);
-
   }
-
 })
