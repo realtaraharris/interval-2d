@@ -122,11 +122,16 @@ regl.frame((ctx) => {
     evaluatorContext.reset();
     stats.reset();
 
-    const jitteredShapes = shapes.map(shape => [
-      shape[0] + Math.random() * 2.5 / mouse.zoom,
-      shape[1] + Math.random() * 2.5 / mouse.zoom,
-      shape[2]
-    ])
+    var inputShapes;
+    if (document.querySelector("#stats .jitter input").checked) {
+      inputShapes = shapes.map(shape => [
+        shape[0] + (Math.random() - 0.5) * 2.5 / mouse.zoom,
+        shape[1] + (Math.random() - 0.5) * 2.5 / mouse.zoom,
+        shape[2]
+      ])
+    } else {
+      inputShapes = shapes;
+    }
 
     var maspect = Math.max(ctx.viewportHeight, ctx.viewportWidth);
     var hw = (maspect / 2) / mouse.zoom;
@@ -141,18 +146,19 @@ regl.frame((ctx) => {
     var uy =  hh;
 
     evaluate(
-      jitteredShapes,
+      inputShapes,
       translation,
       lx,
       ly,
       ux,
       uy,
-      (x, y, size, opCount, leaf) => {
-        if (leaf) {
-          stats.totalLeafOps += opCount
+      (r, ix, iy, ops) => {
+        var size = Math.max(ix[1] - ix[0], iy[1] - iy[0]);
+        if (r[0] <= 0 && r[1] >= 0 && size < (1 / mouse.zoom)) {
+          stats.totalLeafOps += ops.length
           stats.totalLeaves++;
-          stats.opsPerLeaf.push(opCount);
-          evaluatorContext.addPoint(x, y);
+          stats.opsPerLeaf.push(ops.length);
+          evaluatorContext.addPoint(ix[0], iy[0]);
         } else {
           //  TODO: add a colored quad
           // addQuad.fillStyle = `hsla(${size}, 100%, 55%, .75)`
