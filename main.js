@@ -8,150 +8,7 @@ var imin = require('interval-min');
 var max = Math.max;
 var min = Math.min;
 
-function isqr(a) {
-  if (a[0]>=0.0) {
-    return [a[0] * a[0], a[1] * a[1]]
-  } else if (a[1] < 0.0) {
-    return [a[1] * a[1], a[0] * a[0]]
-  } else {
-    return [0.0, max(a[0]*a[0], a[1]*a[1])]
-  }
-}
-
-function ilensq(a, b) {
-  var pa = isqr(a)
-  var pb = isqr(b)
-
-  return [pa[0] + pb[0], pa[1] + pb[1]]
-}
-
-function isqrt(a) {
-  return [Math.sqrt(a[0]), Math.sqrt(a[1])];
-}
-
-function ilen(a, b) {
-  var pa = isqr(a);
-  var pb = isqr(b);
-  return isqrt([
-    pa[0] + pb[0],
-    pa[1] + pb[1]
-  ])
-}
-
-function iabs (i) {
-  if (i[0] >= 0.0) {
-    return i;
-  } else if (i[1] <= 0.0) {
-    return [-i[1], -i[0]];
-  } else {
-    return [0, Math.max(-i[0], i[1])];
-  }
-}
-
-function imax (a, b) {
-  if (a[1] <= b[0]) {
-    return b;
-  }
-
-  if (a[0] <= b[0]) {
-    if (b[0] <= a[1]) {
-      if (a[1] <= b[1]) {
-        return b;
-      } else {
-        return [b[0], a[1]];
-      }
-    }
-  }
-
-  if (b[1] <= a[0]) {
-    return a;
-  }
-
-  if (b[0] <= a[0]) {
-    if (a[0] <= b[1]) {
-      if (b[1] <= a[1]) {
-        return a;
-      } else {
-        return [a[0], b[1]];
-      }
-    }
-  }
-}
-
-function iset(out, l, u) {
-  out[0] = l;
-  out[1] = u;
-}
-
-function ival(v) {
-  return [v, v]
-}
-
-function ipowsmooth(a, b, k) {
-  k = k || ival(8);
-  a = ipow(a, k);
-  b = ipow(b, k);
-  return ipow(
-    idiv(imul(a, b), iadd(a, b)),
-    idiv(ival(1.0), k)
-  );
-}
-
-function idiv(a, b) {
-  var l = a[0] / b[0];
-  var u = a[1] / b[1];
-  return [min(l, u), max(l, u)]
-}
-
-function crossesZero (interval) {
-  return 0 >= interval[0] && 0 <= interval[1];
-}
-
-function middle (l, u) {
-  return (l + u) * 0.5;
-}
-
-function circle (x, y, r, translation) {
-  var lx = [x[0] - translation[0], x[1] - translation[0]];
-  var ly = [y[0] - translation[1], y[1] - translation[1]];
-
-  return isub(ilen(lx, ly), r);
-}
-
-function rect (x, y, rx, ry, p) {
-  return imax(
-    isub(iabs(isub(x, ival(p[0]))), rx),
-    isub(iabs(isub(y, ival(p[1]))), ry)
-  );
-}
-
-function triangle (x, y, w, h, translation) {
-  return imax(
-    isub(
-      imul(isub(x, h), isub(h, h)),
-      imul(isub(y, h), isub(w, h))
-    ),
-    imax(
-      isub(
-        imul(isub(x, w), isub(w, h)),
-        imul(isub(y, h), isub(h, w))
-      ),
-      isub(
-        imul(isub(x, h), isub(h, w)),
-        imul(isub(y, w), isub(h, h))
-      )
-    )
-  );
-}
-
-function opicut(a, b) {
-  var la = -a[0];
-  var ua = -a[1];
-  return imax(
-    [min(la, ua), max(la, ua)],
-    b
-  )
-}
+var evaluate = require('./evaluator')
 
 var stats = {
   totalLeafOps: 0,
@@ -164,16 +21,18 @@ var stats = {
   }
 };
 
-function inout(ctx, r, ix, iy, shapes) {
+function addQuad(r, ix, iy, ops) {
   var size = Math.max(ix[1] - ix[0], iy[1] - iy[0]);
   if (r[0] <= 0 && r[1] >= 0 && size < (1 / mouse.zoom)) {
 
-    stats.totalLeafOps += shapes.length
+    stats.totalLeafOps += ops.length
     stats.totalLeaves++;
-    stats.opsPerLeaf.push(shapes.length);
+    stats.opsPerLeaf.push(ops.length);
+    ctx.fillStyle = "white"
     ctx.fillRect(ix[0], iy[0], (ix[1] - ix[0]), (iy[1] - iy[0]));
   } else {
-    // ctx.fillStyle = `hsla(${size}, 100%, 55%, .75)`
+    ctx.fillStyle = `hsla(${size}, 100%, 55%, .75)`
+    ctx.fillRect(ix[0], iy[0], (ix[1] - ix[0]), (iy[1] - iy[0]));
   }
   return r;
 }
@@ -281,8 +140,8 @@ var translation = [0, 0]
 var ctx = fc(function (dt) {
 
   const jitteredShapes = shapes.map(shape => [
-    shape[0] + Math.random() * 5.5 / mouse.zoom,
-    shape[1] + Math.random() * 5.5 / mouse.zoom,
+    shape[0], // + Math.random() * 5.5 / mouse.zoom,
+    shape[1], // + Math.random() * 5.5 / mouse.zoom,
     shape[2]
   ])
 
@@ -337,7 +196,17 @@ console.clear()
   }
 
   const start = performance.now();
-  box(jitteredShapes, translation, lx, ly, ux, uy, ctx, mouse.zoom, 0, evaluateScene);
+  evaluate(
+    jitteredShapes,
+    translation,
+    lx,
+    ly,
+    ux,
+    uy,
+    addQuad,
+    mouse.zoom,
+    0
+  );
   const end = performance.now();
   ctx.restore();
   ctx.fillStyle = "#"

@@ -1,7 +1,3 @@
-var fc = require('fc');
-var center = require('ctx-translate-center')
-
-
 const regl = require('regl')()
 const mat4 = require('gl-mat4')
 
@@ -59,9 +55,7 @@ window.addEventListener('mousemove', function(e) {
 })
 
 var shapes = [[0, 0, 10]]
-
 var translation = [0, 0]
-
 
 const drawPoints = regl({
   depth: { enable: false },
@@ -96,7 +90,6 @@ const drawPoints = regl({
 
   primitive: 'points'
 })
-
 
 var stats = {
   totalLeafOps: 0,

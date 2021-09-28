@@ -152,21 +152,6 @@ function opicut(a, b) {
   )
 }
 
-
-var inout_s = [0, 0];
-function inout(addQuad, r, ix, iy, shapes, scale) {
-  var size = Math.max(ix[1] - ix[0], iy[1] - iy[0]);
-  var leaf = r[0] <= 0 && r[1] >= 0 && size < (1 / scale)
-  addQuad(
-    ix[0],
-    iy[1],
-    ix[1] - ix[0],
-    iy[1] - iy[0],
-    shapes.length,
-    leaf
-  )
-}
-
 function evaluateScene (inputShapes, x, y, translation, outFilteredShapes) {
   var l = inputShapes.length;
   var r = ival(1);
@@ -206,7 +191,7 @@ function evaluate(inputShapes, translation, lx, ly, ux, uy, addQuad, scale, dept
   var upperRightShapes = []
   r = evaluateScene(inputShapes, scratchx, scratchy, translation, upperRightShapes);
   if (crossesZero(r)) { // upper-right
-    inout(addQuad, r, scratchx, scratchy, upperRightShapes, scale);
+    addQuad(r, scratchx, scratchy, upperRightShapes, scale);
     maxDepth = max(maxDepth,
       evaluate(upperRightShapes, translation, midx, midy, ux, uy, addQuad, scale, depth + 1, evaluateScene)
     );
@@ -217,7 +202,7 @@ function evaluate(inputShapes, translation, lx, ly, ux, uy, addQuad, scale, dept
   var upperLeftShapes = []
   r = evaluateScene(inputShapes, scratchx, scratchy, translation, upperLeftShapes);
   if (crossesZero(r)) { // upper-left
-    inout(addQuad, r, scratchx, scratchy, upperLeftShapes, scale);
+    addQuad(r, scratchx, scratchy, upperLeftShapes, scale);
     maxDepth = max(maxDepth,
       evaluate(upperLeftShapes, translation, lx, midy, midx, uy, addQuad, scale, depth + 1, evaluateScene)
     );
@@ -227,7 +212,7 @@ function evaluate(inputShapes, translation, lx, ly, ux, uy, addQuad, scale, dept
   var lowerRightShapes = [];
   r = evaluateScene(inputShapes, scratchx, scratchy, translation, lowerRightShapes);
   if (crossesZero(r)) { // lower-right
-    inout(addQuad, r, scratchx, scratchy, lowerRightShapes, scale);
+    addQuad(r, scratchx, scratchy, lowerRightShapes, scale);
     maxDepth = max(maxDepth,
       evaluate(lowerRightShapes, translation, lx, ly, midx, midy, addQuad, scale, depth + 1, evaluateScene)
     );
@@ -238,7 +223,7 @@ function evaluate(inputShapes, translation, lx, ly, ux, uy, addQuad, scale, dept
   var lowerLeftShapes = [];
   r = evaluateScene(inputShapes, scratchx, scratchy, translation, lowerLeftShapes);
   if (crossesZero(r)) { // lower-left
-    inout(addQuad, r, scratchx, scratchy, lowerLeftShapes, scale);
+    addQuad(r, scratchx, scratchy, lowerLeftShapes, scale);
     maxDepth = max(maxDepth,
       evaluate(lowerLeftShapes, translation, midx, ly, ux, midy, addQuad, scale, depth + 1, evaluateScene)
     );
