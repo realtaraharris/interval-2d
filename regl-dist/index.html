@@ -1,0 +1,40 @@
+<html>
+  <head>
+    <style>
+      #stats {
+        position:absolute;
+        left: 10px;
+        top: 10px;
+        width: 300px;
+        height: 150px;
+        color: white;
+        font-family: monospace;
+        font-size: 14px;
+        background-color: #111122EE;
+        border: 1px solid #333366;
+        padding: 10px;
+      }
+
+      pre {
+        padding: 0;
+        margin:0;
+      }
+    </style>
+  </head>
+  <body>
+    <script src="bundle.js"></script>
+    <div id="stats">
+      <div class="timing"></div>
+      <div class="counts"></div>
+      <div class="avg"></div>
+      <div class="stddev"></div>
+      <div class="efficiency"></div>
+
+      <p>
+        Usage: <br />
+        - mouse down + move to paint <br />
+        - mouse wheel to zoom
+      </p>
+    </div>
+  </body>
+</html>

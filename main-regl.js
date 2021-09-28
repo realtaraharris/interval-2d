@@ -341,6 +341,7 @@ regl.frame((ctx) => {
   const start = performance.now();
   {
     evaluatorContext.reset();
+    stats.reset();
 
     const jitteredShapes = shapes.map(shape => [
       shape[0] + Math.random() * 2.5 / mouse.zoom,
@@ -400,4 +401,32 @@ regl.frame((ctx) => {
     pointBuffer: evaluatorContext.pointBuffer,
     worldToScreen: mat4.ortho([], -w, w, h, -h, -1, 1)
   })
+
+  // update stats
+  {
+
+    const log = (sel, val) => {
+      var el = document.querySelector(sel)
+      if (!el) {
+        return
+      }
+
+      el.innerHTML = val;
+    }
+
+    log("#stats .timing", `eval: ${(end-start).toFixed(2)}ms`)
+    log("#stats .counts", `ops: ${shapes.length} leaf nodes: ${stats.totalLeaves}`);
+
+    const avg = (stats.totalLeafOps / stats.totalLeaves);
+    log("#stats .avg", 'avg ops per leaf: ' + avg.toFixed(4));
+
+    var variance = stats.opsPerLeaf.reduce((p, c) => {
+      return Math.pow(c - avg, 2) + p
+    }, 0) / stats.opsPerLeaf.length
+
+    log("#stats .stddev", 'stddev: ' + (Math.sqrt(variance)).toFixed(4));
+    log("#stats .efficiency", `culling efficiency: ${((1.0 - avg / shapes.length)*100).toFixed(2)}%`);
+
+  }
+
 })

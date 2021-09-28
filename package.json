@@ -4,7 +4,8 @@
   "repository": "https://github.com/maxharris9/interval-2d",
   "scripts": {
     "start": "budo main.js --live",
-    "regl": "budo main-regl.js --live",
+    "regl": "budo main-regl.js:bundle.js -d regl-dist --live --open",
+    "dist-regl": "browserify -p tinyify -e main-regl.js > regl-dist/bundle.js",
     "test": "tape test-*.js"
   },
   "dependencies": {
@@ -20,6 +21,7 @@
     "budo": "^5.1.0",
     "ctx-translate-center": "^1.0.0",
     "interval-min": "^1.0.0",
-    "tape": "^4.2.0"
+    "tape": "^4.2.0",
+    "tinyify": "^3.0.0"
   }
 }
