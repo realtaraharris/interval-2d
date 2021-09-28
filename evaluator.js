@@ -2,39 +2,53 @@ var iadd = require('interval-add');
 var isub = require('interval-subtract');
 var imul = require('interval-multiply');
 var imin = require('interval-min');
+var idiv = require('interval-divide')
 
 module.exports = evaluate
 
 var max = Math.max;
 var min = Math.min;
-function isqr(a) {
+function isqr(a, out) {
+  out = out || []
   if (a[0]>=0.0) {
-    return [a[0] * a[0], a[1] * a[1]]
+    out[0] = a[0] * a[0]
+    out[1] = a[1] * a[1]
   } else if (a[1] < 0.0) {
-    return [a[1] * a[1], a[0] * a[0]]
+    out[0] = a[1] * a[1]
+    out[1] = a[0] * a[0]
   } else {
-    return [0.0, max(a[0]*a[0], a[1]*a[1])]
+    out[0] = 0.0
+    out[1] = Math.max(a[0]*a[0], a[1]*a[1])
   }
+  return out
 }
 
-function ilensq(a, b) {
-  var pa = isqr(a)
-  var pb = isqr(b)
+var ilensq_a = ival(0)
+var ilensq_b = ival(0)
+function ilensq(a, b, out) {
+  var pa = isqr(a, ilensq_a)
+  var pb = isqr(b, ilensq_b)
 
-  return [pa[0] + pb[0], pa[1] + pb[1]]
+  out[0] = pa[0] + pb[0]
+  out[1] = pa[1] + pb[1]
+  return out
 }
 
-function isqrt(a) {
-  return [Math.sqrt(a[0]), Math.sqrt(a[1])];
+function isqrt(a, out) {
+  out[0] = Math.sqrt(a[0])
+  out[1] = Math.sqrt(a[1])
+  return out
 }
 
-function ilen(a, b) {
-  var pa = isqr(a);
-  var pb = isqr(b);
-  return isqrt([
-    pa[0] + pb[0],
-    pa[1] + pb[1]
-  ])
+
+var ilen_a = ival(0);
+var ilen_b = ival(0);
+function ilen(a, b, out) {
+  var pa = isqr(a, ilen_a);
+  var pb = isqr(b, ilen_b);
+  pa[0] += pb[0],
+  pa[1] += pb[1]
+  return isqrt(pa, pb, out)
 }
 
 function iabs (i) {
@@ -47,31 +61,44 @@ function iabs (i) {
   }
 }
 
-function imax (a, b) {
+
+function imax (a, b, out) {
   if (a[1] <= b[0]) {
-    return b;
+    out[0] = b[0]
+    out[1] = b[1]
+    return out
   }
 
   if (a[0] <= b[0]) {
     if (b[0] <= a[1]) {
       if (a[1] <= b[1]) {
-        return b;
+        out[0] = b[0]
+        out[1] = b[1]
+        return out
       } else {
-        return [b[0], a[1]];
+        out[0] = b[0]
+        out[1] = a[1]
+        return out
       }
     }
   }
 
   if (b[1] <= a[0]) {
-    return a;
+    out[0] = a[0]
+    out[1] = a[1]
+    return out
   }
 
   if (b[0] <= a[0]) {
     if (a[0] <= b[1]) {
       if (b[1] <= a[1]) {
-        return a;
+        out[0] = a[0]
+        out[1] = a[1]
+        return out
       } else {
-        return [a[0], b[1]];
+        out[0] = a[0]
+        out[1] = b[1]
+        return out;
       }
     }
   }
@@ -96,12 +123,6 @@ function ipowsmooth(a, b, k) {
   );
 }
 
-function idiv(a, b) {
-  var l = a[0] / b[0];
-  var u = a[1] / b[1];
-  return [min(l, u), max(l, u)]
-}
-
 function crossesZero (interval) {
   return 0 >= interval[0] && 0 <= interval[1];
 }
@@ -110,11 +131,20 @@ function middle (l, u) {
   return (l + u) * 0.5;
 }
 
-function circle (x, y, r, translation) {
-  var lx = [x[0] - translation[0], x[1] - translation[0]];
-  var ly = [y[0] - translation[1], y[1] - translation[1]];
+var circle_x = ival(0)
+var circle_y = ival(0)
+var circle_a = ival(0)
+function circle (x, y, r, translation, out) {
+  circle_x[0] = x[0] - translation[0]
+  circle_x[1] = x[1] - translation[0]
+  circle_y[0] = y[0] - translation[1]
+  circle_y[1] = y[1] - translation[1]
 
-  return isub(ilen(lx, ly), r);
+  return isub(
+    ilen(circle_x, circle_y, circle_a),
+    r,
+    out
+  );
 }
 
 function rect (x, y, rx, ry, p) {
@@ -143,36 +173,50 @@ function triangle (x, y, w, h, translation) {
   );
 }
 
-function opicut(a, b) {
+var opicut_a =  ival(0)
+function opicut(a, b, out) {
   var la = -a[0];
   var ua = -a[1];
+
+  opicut_a[0] = Math.min(la, ua)
+  opicut_a[1] = Math.max(la, ua)
+
   return imax(
-    [min(la, ua), max(la, ua)],
-    b
+    opicut_a,
+    b,
+    out
   )
 }
 
-function evaluateScene (inputShapes, x, y, translation, outFilteredShapes) {
+var eval_translation = ival(0)
+var eval_local_distance = ival(0)
+var eval_circle_r = ival(0)
+function evaluateScene (inputShapes, x, y, translation, outFilteredShapes, outDistance) {
   var l = inputShapes.length;
-  var r = ival(1);
+  outDistance[0] = 1;
+  outDistance[1] = 1;
+
   for (var i=0; i<l; i++) {
     var c = inputShapes[i];
-    var distanceInterval = circle(x, y, ival(c[2]), [
-      translation[0] + c[0],
-      translation[1] + c[1]
-    ]);
+    eval_translation[0] = translation[0] + c[0]
+    eval_translation[1] = translation[1] + c[1]
 
-    if (crossesZero(distanceInterval)) {
+    eval_circle_r[0] = c[2]
+    eval_circle_r[1] = c[2]
+    circle(x, y, eval_circle_r, eval_translation, eval_local_distance);
+
+    if (crossesZero(eval_local_distance)) {
       outFilteredShapes.push(c)
     }
 
-    imin(distanceInterval, r, r);
+    imin(eval_local_distance, outDistance, outDistance);
   }
-  return r;
+  return outDistance;
 }
 
 var scratchx = [0, 0];
 var scratchy = [0, 0];
+var scrachDistance = [0, 0];
 function evaluate(inputShapes, translation, lx, ly, ux, uy, addQuad, scale, depth) {
   var maxDepth = depth;
   var size = Math.max(ux - lx, uy - ly) * scale
@@ -183,15 +227,15 @@ function evaluate(inputShapes, translation, lx, ly, ux, uy, addQuad, scale, dept
 
   var midx = middle(lx, ux);
   var midy = middle(ly, uy);
-  var r;
+
 
   iset(scratchx, midx, ux);
   iset(scratchy, midy, uy);
 
   var upperRightShapes = []
-  r = evaluateScene(inputShapes, scratchx, scratchy, translation, upperRightShapes);
-  if (crossesZero(r)) { // upper-right
-    addQuad(r, scratchx, scratchy, upperRightShapes, scale);
+  evaluateScene(inputShapes, scratchx, scratchy, translation, upperRightShapes, scrachDistance);
+  if (crossesZero(scrachDistance)) { // upper-right
+    addQuad(scrachDistance, scratchx, scratchy, upperRightShapes, scale);
     maxDepth = max(maxDepth,
       evaluate(upperRightShapes, translation, midx, midy, ux, uy, addQuad, scale, depth + 1, evaluateScene)
     );
@@ -200,9 +244,9 @@ function evaluate(inputShapes, translation, lx, ly, ux, uy, addQuad, scale, dept
   iset(scratchx, lx, midx);
   iset(scratchy, midy, uy);
   var upperLeftShapes = []
-  r = evaluateScene(inputShapes, scratchx, scratchy, translation, upperLeftShapes);
-  if (crossesZero(r)) { // upper-left
-    addQuad(r, scratchx, scratchy, upperLeftShapes, scale);
+  evaluateScene(inputShapes, scratchx, scratchy, translation, upperLeftShapes, scrachDistance);
+  if (crossesZero(scrachDistance)) { // upper-left
+    addQuad(scrachDistance, scratchx, scratchy, upperLeftShapes, scale);
     maxDepth = max(maxDepth,
       evaluate(upperLeftShapes, translation, lx, midy, midx, uy, addQuad, scale, depth + 1, evaluateScene)
     );
@@ -210,9 +254,9 @@ function evaluate(inputShapes, translation, lx, ly, ux, uy, addQuad, scale, dept
   iset(scratchx, lx, midx);
   iset(scratchy, ly, midy);
   var lowerRightShapes = [];
-  r = evaluateScene(inputShapes, scratchx, scratchy, translation, lowerRightShapes);
-  if (crossesZero(r)) { // lower-right
-    addQuad(r, scratchx, scratchy, lowerRightShapes, scale);
+  evaluateScene(inputShapes, scratchx, scratchy, translation, lowerRightShapes, scrachDistance);
+  if (crossesZero(scrachDistance)) { // lower-right
+    addQuad(scrachDistance, scratchx, scratchy, lowerRightShapes, scale);
     maxDepth = max(maxDepth,
       evaluate(lowerRightShapes, translation, lx, ly, midx, midy, addQuad, scale, depth + 1, evaluateScene)
     );
@@ -221,9 +265,9 @@ function evaluate(inputShapes, translation, lx, ly, ux, uy, addQuad, scale, dept
   iset(scratchx, midx, ux);
   iset(scratchy, ly, midy);
   var lowerLeftShapes = [];
-  r = evaluateScene(inputShapes, scratchx, scratchy, translation, lowerLeftShapes);
-  if (crossesZero(r)) { // lower-left
-    addQuad(r, scratchx, scratchy, lowerLeftShapes, scale);
+  evaluateScene(inputShapes, scratchx, scratchy, translation, lowerLeftShapes, scrachDistance);
+  if (crossesZero(scrachDistance)) { // lower-left
+    addQuad(scrachDistance, scratchx, scratchy, lowerLeftShapes, scale);
     maxDepth = max(maxDepth,
       evaluate(lowerLeftShapes, translation, midx, ly, ux, midy, addQuad, scale, depth + 1, evaluateScene)
     );
