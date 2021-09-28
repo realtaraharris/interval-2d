@@ -22,6 +22,15 @@ const evaluatorContext = {
   }
 }
 
+
+var keys = {};
+document.addEventListener("keydown", (e) => {
+  keys[e.code] = true
+})
+document.addEventListener("keyup", (e) => {
+  delete keys[e.code]
+})
+
 var mouse = { zoom: 1, down: false, translate: [0, 0] }
 window.addEventListener('wheel', function(e) {
   mouse.zoom += e.wheelDelta / 500;
@@ -32,22 +41,14 @@ window.addEventListener('wheel', function(e) {
 }, {passive: false})
 
 window.addEventListener('mousedown', function(e) { mouse.down = [e.clientX, e.clientY]; })
-window.addEventListener('mouseup', function(e) {
-  mouse.down = false;
-  var s = [
-    (e.clientX - window.innerWidth / 2) / mouse.zoom,
-    (e.clientY - window.innerHeight / 2) / mouse.zoom,
-    10
-  ];
-
-  shapes.push(s);
-})
+window.addEventListener('mouseup', function(e) { mouse.down = false; })
 window.addEventListener('mousemove', function(e) {
   if (mouse.down) {
     var s = [
       (e.clientX - viewport[0]) / mouse.zoom,
       (e.clientY - viewport[1]) / mouse.zoom,
-      100
+      100,
+      !!keys.KeyD // delete
     ];
 
     shapes.push(s);
@@ -120,7 +121,8 @@ regl.frame((ctx) => {
       inputShapes = shapes.map(shape => [
         shape[0] + (Math.random() - 0.5) * 2.5 / mouse.zoom,
         shape[1] + (Math.random() - 0.5) * 2.5 / mouse.zoom,
-        shape[2]
+        shape[2],
+        shape[3]
       ])
     } else {
       inputShapes = shapes;

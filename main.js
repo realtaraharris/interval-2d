@@ -37,67 +37,13 @@ function addQuad(r, ix, iy, ops) {
   return r;
 }
 
-var scratchx = [0, 0];
-var scratchy = [0, 0];
-function box (inputShapes, translation, lx, ly, ux, uy, ctx, scale, depth, fn) {
-  var maxDepth = depth;
-  var size = Math.max(ux - lx, uy - ly) * scale
-
-  if (size < 1) {
-    return maxDepth;
-  }
-
-  var midx = middle(lx, ux);
-  var midy = middle(ly, uy);
-  var r;
-
-  iset(scratchx, midx, ux);
-  iset(scratchy, midy, uy);
-
-  var upperRightShapes = []
-  r = fn(inputShapes, scratchx, scratchy, translation, upperRightShapes);
-  if (crossesZero(r)) { // upper-right
-    inout(ctx, r, scratchx, scratchy, upperRightShapes);
-    maxDepth = max(maxDepth,
-      box(upperRightShapes, translation, midx, midy, ux, uy, ctx, scale, depth + 1, fn)
-    );
-  }
-
-  iset(scratchx, lx, midx);
-  iset(scratchy, midy, uy);
-  var upperLeftShapes = []
-  r = fn(inputShapes, scratchx, scratchy, translation, upperLeftShapes);
-  if (crossesZero(r)) { // upper-left
-    inout(ctx, r, scratchx, scratchy, upperLeftShapes);
-    maxDepth = max(maxDepth,
-      box(upperLeftShapes, translation, lx, midy, midx, uy, ctx, scale, depth + 1, fn)
-    );
-  }
-
-  iset(scratchx, lx, midx);
-  iset(scratchy, ly, midy);
-  var lowerRightShapes = [];
-  r = fn(inputShapes, scratchx, scratchy, translation, lowerRightShapes);
-  if (crossesZero(r)) { // lower-right
-    inout(ctx, r, scratchx, scratchy, lowerRightShapes);
-    maxDepth = max(maxDepth,
-      box(lowerRightShapes, translation, lx, ly, midx, midy, ctx, scale, depth + 1, fn)
-    );
-  }
-
-  iset(scratchx, midx, ux);
-  iset(scratchy, ly, midy);
-  var lowerLeftShapes = [];
-  r = fn(inputShapes, scratchx, scratchy, translation, lowerLeftShapes);
-  if (crossesZero(r)) { // lower-left
-    inout(ctx, r, scratchx, scratchy, lowerLeftShapes);
-    maxDepth = max(maxDepth,
-      box(lowerLeftShapes, translation, midx, ly, ux, midy, ctx, scale, depth + 1, fn)
-    );
-  }
-
-  return maxDepth;
-}
+var keys = {};
+document.addEventListener("keydown", (e) => {
+  keys[e.code] = true
+})
+document.addEventListener("keyup", (e) => {
+  delete keys[e.code]
+})
 
 var mouse = { zoom: 1, down: false, translate: [0, 0] }
 window.addEventListener('wheel', function(e) {
@@ -110,23 +56,14 @@ window.addEventListener('wheel', function(e) {
 })
 
 window.addEventListener('mousedown', function(e) { mouse.down = [e.clientX, e.clientY]; })
-window.addEventListener('mouseup', function(e) {
-  mouse.down = false;
-  var s = [
-    (e.clientX - ctx.canvas.width / 2) / mouse.zoom,
-    (e.clientY - ctx.canvas.height / 2) / mouse.zoom,
-    10
-  ];
-
-  shapes.push(s);
-  ctx.dirty()
-})
+window.addEventListener('mouseup', function(e) { mouse.down = false; })
 window.addEventListener('mousemove', function(e) {
   if (mouse.down) {
     var s = [
       (e.clientX - ctx.canvas.width / 2) / mouse.zoom,
       (e.clientY - ctx.canvas.height / 2) / mouse.zoom,
-      100
+      100,
+      !!keys.KeyD // delete
     ];
 
     shapes.push(s);
@@ -142,7 +79,8 @@ var ctx = fc(function (dt) {
   const jitteredShapes = shapes.map(shape => [
     shape[0], // + Math.random() * 5.5 / mouse.zoom,
     shape[1], // + Math.random() * 5.5 / mouse.zoom,
-    shape[2]
+    shape[2],
+    shape[3]
   ])
 
   stats.reset();

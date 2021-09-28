@@ -209,7 +209,11 @@ function evaluateScene (inputShapes, x, y, translation, outFilteredShapes, outDi
       outFilteredShapes.push(c)
     }
 
-    imin(eval_local_distance, outDistance, outDistance);
+    if (c[3]) {
+      opicut(eval_local_distance, outDistance, outDistance)
+    } else {
+      imin(eval_local_distance, outDistance, outDistance);
+    }
   }
   return outDistance;
 }
