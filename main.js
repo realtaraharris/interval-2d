@@ -241,7 +241,7 @@ function box (inputShapes, translation, lx, ly, ux, uy, ctx, scale, depth, fn) {
 }
 
 var mouse = { zoom: 1, down: false, translate: [0, 0] }
-window.addEventListener('mousewheel', function(e) {
+window.addEventListener('wheel', function(e) {
   ctx.dirty();
   mouse.zoom += e.wheelDelta / 500;
   if (mouse.zoom < .1) {
