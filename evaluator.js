@@ -2,6 +2,7 @@ var iadd = require('interval-add');
 var isub = require('interval-subtract');
 var imul = require('interval-multiply');
 var imin = require('interval-min');
+var imax = require('interval-max');
 var idiv = require('interval-divide')
 
 module.exports = evaluate
@@ -58,49 +59,6 @@ function iabs (i) {
     return [-i[1], -i[0]];
   } else {
     return [0, Math.max(-i[0], i[1])];
-  }
-}
-
-
-function imax (a, b, out) {
-  if (a[1] <= b[0]) {
-    out[0] = b[0]
-    out[1] = b[1]
-    return out
-  }
-
-  if (a[0] <= b[0]) {
-    if (b[0] <= a[1]) {
-      if (a[1] <= b[1]) {
-        out[0] = b[0]
-        out[1] = b[1]
-        return out
-      } else {
-        out[0] = b[0]
-        out[1] = a[1]
-        return out
-      }
-    }
-  }
-
-  if (b[1] <= a[0]) {
-    out[0] = a[0]
-    out[1] = a[1]
-    return out
-  }
-
-  if (b[0] <= a[0]) {
-    if (a[0] <= b[1]) {
-      if (b[1] <= a[1]) {
-        out[0] = a[0]
-        out[1] = a[1]
-        return out
-      } else {
-        out[0] = a[0]
-        out[1] = b[1]
-        return out;
-      }
-    }
   }
 }
 
