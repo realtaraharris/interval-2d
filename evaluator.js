@@ -92,7 +92,7 @@ function middle (l, u) {
 var circle_x = ival(0)
 var circle_y = ival(0)
 var circle_a = ival(0)
-function circle (x, y, r, translation, out) {
+function circle (x, y, radius, translation, out) {
   circle_x[0] = x[0] - translation[0]
   circle_x[1] = x[1] - translation[0]
   circle_y[0] = y[0] - translation[1]
@@ -100,7 +100,7 @@ function circle (x, y, r, translation, out) {
 
   return isub(
     ilen(circle_x, circle_y, circle_a),
-    r,
+    radius,
     out
   );
 }
@@ -110,6 +110,12 @@ function rect (x, y, rx, ry, p) {
     isub(iabs(isub(x, ival(p[0]))), rx),
     isub(iabs(isub(y, ival(p[1]))), ry)
   );
+}
+
+function inegate(a, out) {
+  out[0] = -a[0]
+  out[1] = -a[1]
+  return out;
 }
 
 function triangle (x, y, w, h, translation) {
@@ -146,16 +152,26 @@ function opicut(a, b, out) {
   )
 }
 
+function inegate(a, out) {
+  var la = -a[0]
+  var ua = -a[1]
+  out[0] = ua;//Math.min(la, ua)
+  out[1] = la//Math.max(la, ua)
+  return out
+}
+
+
 var eval_translation = ival(0)
 var eval_local_distance = ival(0)
 var eval_circle_r = ival(0)
-function evaluateScene (inputShapes, x, y, translation, outFilteredShapes, outDistance) {
-  var l = inputShapes.length;
-  outDistance[0] = 1;
-  outDistance[1] = 1;
+var eval_cut = ival(0)
+function evaluateScene (inputOps, x, y, translation, outFilteredOps, outDistance) {
+  var l = inputOps.length;
+  outDistance[0] = 1000;
+  outDistance[1] = 1000;
 
   for (var i=0; i<l; i++) {
-    var c = inputShapes[i];
+    var c = inputOps[i];
     eval_translation[0] = translation[0] + c[0]
     eval_translation[1] = translation[1] + c[1]
 
@@ -163,14 +179,20 @@ function evaluateScene (inputShapes, x, y, translation, outFilteredShapes, outDi
     eval_circle_r[1] = c[2]
     circle(x, y, eval_circle_r, eval_translation, eval_local_distance);
 
-    if (crossesZero(eval_local_distance)) {
-      outFilteredShapes.push(c)
+    // Note: for cut to work the op must be included if the test interval
+    //       is inside (crossing or fully internal)
+    if (eval_local_distance[0] < 0) {
+      outFilteredOps.push(c)
     }
 
-    if (c[3]) {
-      opicut(eval_local_distance, outDistance, outDistance)
-    } else {
+    if (!c[3]) {
       imin(eval_local_distance, outDistance, outDistance);
+    } else {
+      imax(
+        inegate(eval_local_distance, eval_cut),
+        outDistance,
+        outDistance
+      )
     }
   }
   return outDistance;

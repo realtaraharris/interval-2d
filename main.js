@@ -71,7 +71,10 @@ window.addEventListener('mousemove', function(e) {
   }
 })
 
-var shapes = [[0, 0, 10]]
+var shapes = [
+  [0, 0, 100, false],
+  [0, 90, 100, true],
+]
 
 var translation = [0, 0]
 var ctx = fc(function (dt) {
