@@ -191,12 +191,12 @@ regl.frame((ctx) => {
     log("#stats .timing", `eval: ${(end-start).toFixed(2)}ms`)
     log("#stats .counts", `ops: ${shapes.length} leaf nodes: ${stats.totalLeaves}`);
 
-    const avg = (stats.totalLeafOps / stats.totalLeaves);
+    const avg = (stats.totalLeafOps / (stats.totalLeaves || 1));
     log("#stats .avg", 'avg ops per leaf: ' + avg.toFixed(4));
 
     var variance = stats.opsPerLeaf.reduce((p, c) => {
       return Math.pow(c - avg, 2) + p
-    }, 0) / stats.opsPerLeaf.length
+    }, 0) / (stats.opsPerLeaf.length || 1)
 
     log("#stats .stddev", 'stddev: ' + (Math.sqrt(variance)).toFixed(4));
     log("#stats .efficiency", `culling efficiency: ${((1.0 - avg / shapes.length)*100).toFixed(2)}%`);

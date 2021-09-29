@@ -154,12 +154,12 @@ console.clear()
   ctx.font = "12px monospace"
   ctx.fillText(`shapes: ${shapes.length} leaves: ${stats.totalLeaves} `, 10, 20);
 
-  const avg = (stats.totalLeafOps / stats.totalLeaves);
+  const avg = (stats.totalLeafOps / (stats.totalLeaves || 1));
   ctx.fillText('avg ops per leaf: ' + avg.toFixed(4), 10, 40);
 
   var variance = stats.opsPerLeaf.reduce((p, c) => {
     return Math.pow(c - avg, 2) + p
-  }, 0) / stats.opsPerLeaf.length
+  }, 0) / (stats.opsPerLeaf.length || 1)
 
   ctx.fillText('stddev: ' + (Math.sqrt(variance)).toFixed(4), 10, 60);
   ctx.fillText(`culling efficiency: ${((1.0 - avg / shapes.length)*100).toFixed(2)}%`, 10, 80);
