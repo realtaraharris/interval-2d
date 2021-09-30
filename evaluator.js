@@ -204,13 +204,13 @@ var eval_translation = ival(0)
 var eval_local_distance = ival(0)
 var eval_circle_r = ival(0)
 var eval_cut = ival(0)
-function evaluateScene (inputOps, x, y, translation, outFilteredOps, outDistance) {
-  var l = inputOps.length;
+function evaluateScene (input, x, y, translation, output, outDistance) {
+  var l = input.length;
   outDistance[0] = 1000;
   outDistance[1] = 1000;
 
   for (var i=0; i<l; i++) {
-    var c = inputOps[i];
+    var c = input[i];
     eval_translation[0] = translation[0] + c[0]
     eval_translation[1] = translation[1] + c[1]
 
@@ -221,7 +221,7 @@ function evaluateScene (inputOps, x, y, translation, outFilteredOps, outDistance
     // Note: for cut to work the op must be included if the test interval
     //       is inside (crossing or fully internal)
     if (eval_local_distance[0] < 0) {
-      outFilteredOps.push(c)
+      output.push(c)
     }
 
     if (!c[3]) {
@@ -240,7 +240,7 @@ function evaluateScene (inputOps, x, y, translation, outFilteredOps, outDistance
 var scratchx = [0, 0];
 var scratchy = [0, 0];
 var scrachDistance = [0, 0];
-function evaluate(inputShapes, translation, lx, ly, ux, uy, addQuad, scale, depth) {
+function evaluate(input, translation, lx, ly, ux, uy, addQuad, scale, depth) {
   var maxDepth = depth;
   var size = Math.max(ux - lx, uy - ly) * scale
 
@@ -251,48 +251,51 @@ function evaluate(inputShapes, translation, lx, ly, ux, uy, addQuad, scale, dept
   var midx = middle(lx, ux);
   var midy = middle(ly, uy);
 
-
+ // upper-right
   iset(scratchx, midx, ux);
   iset(scratchy, midy, uy);
-
-  var upperRightShapes = []
-  evaluateScene(inputShapes, scratchx, scratchy, translation, upperRightShapes, scrachDistance);
-  if (crossesZero(scrachDistance)) { // upper-right
-    addQuad(scrachDistance, scratchx, scratchy, upperRightShapes, scale);
+  var output = []
+  evaluateScene(input, scratchx, scratchy, translation, output, scrachDistance);
+  if (crossesZero(scrachDistance)) {
+    addQuad(scrachDistance, scratchx, scratchy, output, scale);
     maxDepth = max(maxDepth,
-      evaluate(upperRightShapes, translation, midx, midy, ux, uy, addQuad, scale, depth + 1, evaluateScene)
+      evaluate(output, translation, midx, midy, ux, uy, addQuad, scale, depth + 1, evaluateScene)
     );
   }
 
+  // upper-left
   iset(scratchx, lx, midx);
   iset(scratchy, midy, uy);
-  var upperLeftShapes = []
-  evaluateScene(inputShapes, scratchx, scratchy, translation, upperLeftShapes, scrachDistance);
-  if (crossesZero(scrachDistance)) { // upper-left
-    addQuad(scrachDistance, scratchx, scratchy, upperLeftShapes, scale);
+  output.length = 0
+  evaluateScene(input, scratchx, scratchy, translation, output, scrachDistance);
+  if (crossesZero(scrachDistance)) {
+    addQuad(scrachDistance, scratchx, scratchy, output, scale);
     maxDepth = max(maxDepth,
-      evaluate(upperLeftShapes, translation, lx, midy, midx, uy, addQuad, scale, depth + 1, evaluateScene)
-    );
-  }
-  iset(scratchx, lx, midx);
-  iset(scratchy, ly, midy);
-  var lowerRightShapes = [];
-  evaluateScene(inputShapes, scratchx, scratchy, translation, lowerRightShapes, scrachDistance);
-  if (crossesZero(scrachDistance)) { // lower-right
-    addQuad(scrachDistance, scratchx, scratchy, lowerRightShapes, scale);
-    maxDepth = max(maxDepth,
-      evaluate(lowerRightShapes, translation, lx, ly, midx, midy, addQuad, scale, depth + 1, evaluateScene)
+      evaluate(output, translation, lx, midy, midx, uy, addQuad, scale, depth + 1, evaluateScene)
     );
   }
 
+  // lower-right
+  iset(scratchx, lx, midx);
+  iset(scratchy, ly, midy);
+  output.length = 0
+  evaluateScene(input, scratchx, scratchy, translation, output, scrachDistance);
+  if (crossesZero(scrachDistance)) {
+    addQuad(scrachDistance, scratchx, scratchy, output, scale);
+    maxDepth = max(maxDepth,
+      evaluate(output, translation, lx, ly, midx, midy, addQuad, scale, depth + 1, evaluateScene)
+    );
+  }
+
+  // lower-left
   iset(scratchx, midx, ux);
   iset(scratchy, ly, midy);
-  var lowerLeftShapes = [];
-  evaluateScene(inputShapes, scratchx, scratchy, translation, lowerLeftShapes, scrachDistance);
-  if (crossesZero(scrachDistance)) { // lower-left
-    addQuad(scrachDistance, scratchx, scratchy, lowerLeftShapes, scale);
+  output.length = 0
+  evaluateScene(input, scratchx, scratchy, translation, output, scrachDistance);
+  if (crossesZero(scrachDistance)) {
+    addQuad(scrachDistance, scratchx, scratchy, output, scale);
     maxDepth = max(maxDepth,
-      evaluate(lowerLeftShapes, translation, midx, ly, ux, midy, addQuad, scale, depth + 1, evaluateScene)
+      evaluate(output, translation, midx, ly, ux, midy, addQuad, scale, depth + 1, evaluateScene)
     );
   }
 
