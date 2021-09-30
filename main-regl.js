@@ -166,6 +166,12 @@ regl.frame((ctx) => {
       evaluatorContext.shapeMode
     ])
 
+    const evaluatorInput = {
+      ops: inputShapes,
+      indices: shapes.map((_, i) => i)
+    }
+
+
     var maspect = Math.max(ctx.viewportHeight, ctx.viewportWidth);
     var hw = (maspect / 2) / mouse.zoom;
     var hh = (maspect / 2) / mouse.zoom;
@@ -179,18 +185,18 @@ regl.frame((ctx) => {
     var uy =  hh;
 
     evaluate(
-      inputShapes,
+      evaluatorInput,
       translation,
       lx,
       ly,
       ux,
       uy,
-      (r, ix, iy, ops) => {
+      (r, ix, iy, input) => {
         var size = Math.max(ix[1] - ix[0], iy[1] - iy[0]);
         if (r[0] <= 0 && r[1] >= 0 && size < (1 / mouse.zoom)) {
-          stats.totalLeafOps += ops.length
+          stats.totalLeafOps += input.indices.length
           stats.totalLeaves++;
-          stats.opsPerLeaf.push(ops.length);
+          stats.opsPerLeaf.push(input.indices.length);
           evaluatorContext.addPoint(ix[0], iy[0]);
         } else {
           //  TODO: add a colored quad

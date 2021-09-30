@@ -205,12 +205,13 @@ var eval_local_distance = ival(0)
 var eval_circle_r = ival(0)
 var eval_cut = ival(0)
 function evaluateScene (input, x, y, translation, output, outDistance) {
-  var l = input.length;
+  var l = input.indices.length;
   outDistance[0] = 1000;
   outDistance[1] = 1000;
 
   for (var i=0; i<l; i++) {
-    var c = input[i];
+    var idx = input.indices[i]
+    var c = input.ops[idx]
     eval_translation[0] = translation[0] + c[0]
     eval_translation[1] = translation[1] + c[1]
 
@@ -221,7 +222,7 @@ function evaluateScene (input, x, y, translation, output, outDistance) {
     // Note: for cut to work the op must be included if the test interval
     //       is inside (crossing or fully internal)
     if (eval_local_distance[0] < 0) {
-      output.push(c)
+      output.indices.push(idx)
     }
 
     if (!c[3]) {
@@ -254,7 +255,14 @@ function evaluate(input, translation, lx, ly, ux, uy, addQuad, scale, depth) {
  // upper-right
   iset(scratchx, midx, ux);
   iset(scratchy, midy, uy);
-  var output = []
+  let output = {
+    ops: input.ops,
+    indices: [],
+    reset() {
+      this.indices.length = 0;
+    }
+
+  };
   evaluateScene(input, scratchx, scratchy, translation, output, scrachDistance);
   if (crossesZero(scrachDistance)) {
     addQuad(scrachDistance, scratchx, scratchy, output, scale);
@@ -266,7 +274,7 @@ function evaluate(input, translation, lx, ly, ux, uy, addQuad, scale, depth) {
   // upper-left
   iset(scratchx, lx, midx);
   iset(scratchy, midy, uy);
-  output.length = 0
+  output.reset()
   evaluateScene(input, scratchx, scratchy, translation, output, scrachDistance);
   if (crossesZero(scrachDistance)) {
     addQuad(scrachDistance, scratchx, scratchy, output, scale);
@@ -278,7 +286,7 @@ function evaluate(input, translation, lx, ly, ux, uy, addQuad, scale, depth) {
   // lower-right
   iset(scratchx, lx, midx);
   iset(scratchy, ly, midy);
-  output.length = 0
+  output.reset()
   evaluateScene(input, scratchx, scratchy, translation, output, scrachDistance);
   if (crossesZero(scrachDistance)) {
     addQuad(scrachDistance, scratchx, scratchy, output, scale);
@@ -290,7 +298,7 @@ function evaluate(input, translation, lx, ly, ux, uy, addQuad, scale, depth) {
   // lower-left
   iset(scratchx, midx, ux);
   iset(scratchy, ly, midy);
-  output.length = 0
+  output.reset()
   evaluateScene(input, scratchx, scratchy, translation, output, scrachDistance);
   if (crossesZero(scrachDistance)) {
     addQuad(scrachDistance, scratchx, scratchy, output, scale);

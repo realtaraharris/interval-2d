@@ -26,13 +26,13 @@ var stats = {
   }
 };
 
-function addQuad(r, ix, iy, ops) {
+function addQuad(r, ix, iy, input) {
   var size = Math.max(ix[1] - ix[0], iy[1] - iy[0]);
   if (r[0] <= 0 && r[1] >= 0 && size < (1 / mouse.zoom)) {
 
-    stats.totalLeafOps += ops.length
+    stats.totalLeafOps += input.indices.length
     stats.totalLeaves++;
-    stats.opsPerLeaf.push(ops.length);
+    stats.opsPerLeaf.push(input.indices.length);
     ctx.fillStyle = "white"
     ctx.fillRect(ix[0], iy[0], (ix[1] - ix[0]), (iy[1] - iy[0]));
   } else {
@@ -106,7 +106,6 @@ var ctx = fc(function (dt) {
   //   shape[2],
   //   shape[3]
   // ])
-  const inputShapes = shapes.map(shape => shape.slice())
 
   // update shape mode
   {
@@ -121,12 +120,19 @@ var ctx = fc(function (dt) {
     }
   }
 
+  const inputShapes = shapes.map(shape => shape.slice())
+  // add preview of the current op under the mouse cursor
   inputShapes.push([
     mouse.pos[0] / mouse.zoom,
     mouse.pos[1] / mouse.zoom,
     100,
     evaluatorContext.shapeMode
   ])
+
+  const evaluatorInput = {
+    ops: inputShapes,
+    indices: shapes.map((_, i) => i)
+  }
 
   stats.reset();
 
@@ -162,7 +168,7 @@ console.clear()
 
   const start = performance.now();
   evaluate(
-    inputShapes,
+    evaluatorInput,
     translation,
     lx,
     ly,
