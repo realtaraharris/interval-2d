@@ -10,6 +10,11 @@ var min = Math.min;
 
 var evaluate = require('./evaluator')
 
+const evaluatorContext = {
+  shapeMode: 0,
+}
+
+
 var stats = {
   totalLeafOps: 0,
   totalLeaves: 0,
@@ -45,7 +50,7 @@ document.addEventListener("keyup", (e) => {
   delete keys[e.code]
 })
 
-var mouse = { zoom: 1, down: false, translate: [0, 0] }
+var mouse = { zoom: 1, down: false, translate: [0, 0], pos: [0, 0]  }
 window.addEventListener('wheel', function(e) {
   ctx.dirty();
   mouse.zoom += e.wheelDelta / 500;
@@ -56,34 +61,71 @@ window.addEventListener('wheel', function(e) {
 })
 
 window.addEventListener('mousedown', function(e) { mouse.down = [e.clientX, e.clientY]; })
-window.addEventListener('mouseup', function(e) { mouse.down = false; })
+window.addEventListener('mouseup', function(e) {
+
+  mouse.down = false;
+
+  var s = [
+    mouse.pos[0] / mouse.zoom,
+    mouse.pos[1] / mouse.zoom,
+    100,
+    evaluatorContext.shapeMode
+  ];
+
+  shapes.push(s);
+})
 window.addEventListener('mousemove', function(e) {
+  mouse.pos[0] = (e.clientX - viewport[0])
+  mouse.pos[1] = (e.clientY - viewport[1])
+
   if (mouse.down) {
     var s = [
-      (e.clientX - ctx.canvas.width / 2) / mouse.zoom,
-      (e.clientY - ctx.canvas.height / 2) / mouse.zoom,
+      mouse.pos[0] / mouse.zoom,
+      mouse.pos[1] / mouse.zoom,
       100,
-      !!keys.KeyD // delete
+      evaluatorContext.shapeMode
     ];
 
     shapes.push(s);
-    ctx.dirty()
   }
 })
 
 var shapes = [
-  [0, 0, 100, false],
-  [0, 90, 100, true],
+  [0, 0, 100, 0],
+  // [0, 200, 100, 2],
 ]
 
 var translation = [0, 0]
+var viewport = [window.innerWidth * 0.5, window.innerHeight * 0.5]
 var ctx = fc(function (dt) {
+  viewport[0] = ctx.canvas.width / 2;
+  viewport[1] = ctx.canvas.height /2 ;
+  // const inputShapes = shapes.map(shape => [
+  //   shape[0], // + Math.random() * 5.5 / mouse.zoom,
+  //   shape[1], // + Math.random() * 5.5 / mouse.zoom,
+  //   shape[2],
+  //   shape[3]
+  // ])
+  const inputShapes = shapes.map(shape => shape.slice())
 
-  const jitteredShapes = shapes.map(shape => [
-    shape[0], // + Math.random() * 5.5 / mouse.zoom,
-    shape[1], // + Math.random() * 5.5 / mouse.zoom,
-    shape[2],
-    shape[3]
+  // update shape mode
+  {
+    // default to union
+    evaluatorContext.shapeMode = 0
+    if (keys.KeyD) {
+      evaluatorContext.shapeMode = 1
+    }
+
+    if (keys.KeyS) {
+      evaluatorContext.shapeMode = 2
+    }
+  }
+
+  inputShapes.push([
+    mouse.pos[0] / mouse.zoom,
+    mouse.pos[1] / mouse.zoom,
+    100,
+    evaluatorContext.shapeMode
   ])
 
   stats.reset();
@@ -117,28 +159,10 @@ console.clear()
   var uy =  hh;
 
   ctx.fillStyle = 'white'
-  function evaluateScene (inputShapes, x, y, translation, outFilteredShapes) {
-    var l = inputShapes.length;
-    var r = ival(1);
-    for (var i=0; i<l; i++) {
-      var c = inputShapes[i];
-      var distanceInterval = circle(x, y, ival(c[2]), [
-        translation[0] + c[0],
-        translation[1] + c[1]
-      ]);
-
-      if (crossesZero(distanceInterval)) {
-        outFilteredShapes.push(c)
-      }
-
-      imin(distanceInterval, r, r);
-    }
-    return r;
-  }
 
   const start = performance.now();
   evaluate(
-    jitteredShapes,
+    inputShapes,
     translation,
     lx,
     ly,

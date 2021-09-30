@@ -6,6 +6,7 @@ const viewport = [0,0];
 
 const MAX_OPS = (1<<21);
 const evaluatorContext = {
+  shapeMode: 0,
   points: [],
   pointBuffer: regl.buffer({
     length: MAX_OPS * 2,
@@ -31,7 +32,7 @@ document.addEventListener("keyup", (e) => {
   delete keys[e.code]
 })
 
-var mouse = { zoom: 1, down: false, translate: [0, 0] }
+var mouse = { zoom: 1, down: false, translate: [0, 0], pos: [0, 0] }
 window.addEventListener('wheel', function(e) {
   mouse.zoom += e.wheelDelta / 500;
   if (mouse.zoom < .1) {
@@ -41,21 +42,38 @@ window.addEventListener('wheel', function(e) {
 }, {passive: false})
 
 window.addEventListener('mousedown', function(e) { mouse.down = [e.clientX, e.clientY]; })
-window.addEventListener('mouseup', function(e) { mouse.down = false; })
+window.addEventListener('mouseup', function(e) {
+  mouse.down = false;
+
+  var s = [
+    mouse.pos[0] / mouse.zoom,
+    mouse.pos[1] / mouse.zoom,
+    100,
+    evaluatorContext.shapeMode
+  ];
+
+  shapes.push(s);
+})
 window.addEventListener('mousemove', function(e) {
+  mouse.pos[0] = (e.clientX - viewport[0])
+  mouse.pos[1] = (e.clientY - viewport[1])
+
   if (mouse.down) {
     var s = [
-      (e.clientX - viewport[0]) / mouse.zoom,
-      (e.clientY - viewport[1]) / mouse.zoom,
+      mouse.pos[0] / mouse.zoom,
+      mouse.pos[1] / mouse.zoom,
       100,
-      !!keys.KeyD // delete
+      evaluatorContext.shapeMode
     ];
 
     shapes.push(s);
   }
 })
+var shapes = [
+  [0, 0, 100, 0],
+  [0, 90, 100, 1],
+]
 
-var shapes = [[0, 0, 10]]
 var translation = [0, 0]
 
 const drawPoints = regl({
@@ -125,8 +143,28 @@ regl.frame((ctx) => {
         shape[3]
       ])
     } else {
-      inputShapes = shapes;
+      inputShapes = shapes.slice();
     }
+
+    // update shape mode
+    {
+      // default to union
+      evaluatorContext.shapeMode = 0
+      if (keys.KeyD) {
+        evaluatorContext.shapeMode = 1
+      }
+
+      if (keys.KeyS) {
+        evaluatorContext.shapeMode = 2
+      }
+    }
+
+    inputShapes.push([
+      mouse.pos[0] / mouse.zoom,
+      mouse.pos[1] / mouse.zoom,
+      100,
+      evaluatorContext.shapeMode
+    ])
 
     var maspect = Math.max(ctx.viewportHeight, ctx.viewportWidth);
     var hw = (maspect / 2) / mouse.zoom;
