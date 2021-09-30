@@ -152,6 +152,45 @@ function opicut(a, b, out) {
   )
 }
 
+
+var soft0 = ival(0);
+var softE = ival(0);
+var soft1 = ival(0);
+var soft2 = ival(0);
+var softR = ival(0);
+var softZero = ival(0);
+var softQuarter = ival(0.25)
+
+function simin(a, b, r, out) {
+  iset(softR, r, r)
+
+  // var e = max(r - abs(a - b), 0);
+  imax(
+    isub(
+      softR,
+      iabs(
+        isub(a, b, soft1),
+        soft0
+      ),
+      soft1
+    ),
+    softZero,
+    softE
+  )
+
+  // return min(a, b) - e*e*0.25/r;
+  return isub(
+    imin(a, b, soft0),
+    imul(
+      isqr(softE, softE),
+      idiv(softQuarter, softR, soft1),
+      soft2
+    ),
+    out
+  )
+}
+
+
 function inegate(a, out) {
   var la = -a[0]
   var ua = -a[1]
