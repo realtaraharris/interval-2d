@@ -50,7 +50,7 @@ document.addEventListener("keyup", (e) => {
   delete keys[e.code]
 })
 
-var mouse = { zoom: 1, down: false, translate: [0, 0], pos: [0, 0]  }
+var mouse = { zoom: 1, down: false, translate: [0, 0], pos: [-10000, 0]  }
 window.addEventListener('wheel', function(e) {
   ctx.dirty();
   mouse.zoom += e.wheelDelta / 500;
@@ -131,7 +131,7 @@ var ctx = fc(function (dt) {
 
   const evaluatorInput = {
     ops: inputShapes,
-    indices: shapes.map((_, i) => i)
+    indices: inputShapes.map((_, i) => i)
   }
 
   stats.reset();
