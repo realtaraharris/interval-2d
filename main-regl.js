@@ -74,6 +74,24 @@ var shapes = [
   [0, 90, 100, 1],
 ]
 
+for (var i=0; i<20000; i++) {
+  // shapes.push([
+  //   (Math.random() * 2.0 - 1.0) * 1000,
+  //   (Math.random() * 2.0 - 1.0) * 1000,
+  //   100,
+  //   0
+  // ])
+  shapes.push([
+    Math.sin(i) * i * 0.0125,
+    Math.cos(i * i) * i * 0.0125,
+    10,
+    0
+  ])
+
+
+
+}
+
 var translation = [0, 0]
 
 const drawPoints = regl({
