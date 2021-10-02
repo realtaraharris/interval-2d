@@ -191,13 +191,13 @@ regl.frame((ctx) => {
       ly,
       ux,
       uy,
-      (r, ix, iy, input) => {
-        var size = Math.max(ix[1] - ix[0], iy[1] - iy[0]);
-        if (r[0] <= 0 && r[1] >= 0 && size < (1 / mouse.zoom)) {
+      (x, y, w, h, input, depth) => {
+        var size = Math.max(w, h);
+        if (size < (1 / mouse.zoom)) {
           stats.totalLeafOps += input.indices.length
           stats.totalLeaves++;
           stats.opsPerLeaf.push(input.indices.length);
-          evaluatorContext.addPoint(ix[0], iy[0]);
+          evaluatorContext.addPoint(x, y);
         } else {
           //  TODO: add a colored quad
           // addQuad.fillStyle = `hsla(${size}, 100%, 55%, .75)`

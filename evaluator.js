@@ -235,7 +235,7 @@ function evaluateScene (input, x, y, translation, output, outDistance) {
       )
     }
   }
-  return outDistance;
+  return crossesZero(outDistance);
 }
 
 var scratchx = [0, 0];
@@ -245,6 +245,7 @@ function evaluate(input, translation, lx, ly, ux, uy, addQuad, scale, depth) {
   var maxDepth = depth;
   var size = Math.max(ux - lx, uy - ly) * scale
 
+  addQuad(lx, ly, ux-lx, uy-ly, input, scale, depth);
   if (size < 1) {
     return maxDepth;
   }
@@ -252,20 +253,19 @@ function evaluate(input, translation, lx, ly, ux, uy, addQuad, scale, depth) {
   var midx = middle(lx, ux);
   var midy = middle(ly, uy);
 
- // upper-right
-  iset(scratchx, midx, ux);
-  iset(scratchy, midy, uy);
   let output = {
     ops: input.ops,
     indices: [],
     reset() {
       this.indices.length = 0;
     }
-
   };
-  evaluateScene(input, scratchx, scratchy, translation, output, scrachDistance);
-  if (crossesZero(scrachDistance)) {
-    addQuad(scrachDistance, scratchx, scratchy, output, scale);
+
+ // upper-right
+  iset(scratchx, midx, ux);
+  iset(scratchy, midy, uy);
+  output.reset()
+  if (evaluateScene(input, scratchx, scratchy, translation, output, scrachDistance)) {
     maxDepth = max(maxDepth,
       evaluate(output, translation, midx, midy, ux, uy, addQuad, scale, depth + 1, evaluateScene)
     );
@@ -275,9 +275,7 @@ function evaluate(input, translation, lx, ly, ux, uy, addQuad, scale, depth) {
   iset(scratchx, lx, midx);
   iset(scratchy, midy, uy);
   output.reset()
-  evaluateScene(input, scratchx, scratchy, translation, output, scrachDistance);
-  if (crossesZero(scrachDistance)) {
-    addQuad(scrachDistance, scratchx, scratchy, output, scale);
+  if (evaluateScene(input, scratchx, scratchy, translation, output, scrachDistance)) {
     maxDepth = max(maxDepth,
       evaluate(output, translation, lx, midy, midx, uy, addQuad, scale, depth + 1, evaluateScene)
     );
@@ -287,9 +285,7 @@ function evaluate(input, translation, lx, ly, ux, uy, addQuad, scale, depth) {
   iset(scratchx, lx, midx);
   iset(scratchy, ly, midy);
   output.reset()
-  evaluateScene(input, scratchx, scratchy, translation, output, scrachDistance);
-  if (crossesZero(scrachDistance)) {
-    addQuad(scrachDistance, scratchx, scratchy, output, scale);
+  if (evaluateScene(input, scratchx, scratchy, translation, output, scrachDistance)) {
     maxDepth = max(maxDepth,
       evaluate(output, translation, lx, ly, midx, midy, addQuad, scale, depth + 1, evaluateScene)
     );
@@ -299,9 +295,7 @@ function evaluate(input, translation, lx, ly, ux, uy, addQuad, scale, depth) {
   iset(scratchx, midx, ux);
   iset(scratchy, ly, midy);
   output.reset()
-  evaluateScene(input, scratchx, scratchy, translation, output, scrachDistance);
-  if (crossesZero(scrachDistance)) {
-    addQuad(scrachDistance, scratchx, scratchy, output, scale);
+  if (evaluateScene(input, scratchx, scratchy, translation, output, scrachDistance)) {
     maxDepth = max(maxDepth,
       evaluate(output, translation, midx, ly, ux, midy, addQuad, scale, depth + 1, evaluateScene)
     );

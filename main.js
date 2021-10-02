@@ -26,22 +26,6 @@ var stats = {
   }
 };
 
-function addQuad(r, ix, iy, input) {
-  var size = Math.max(ix[1] - ix[0], iy[1] - iy[0]);
-  if (r[0] <= 0 && r[1] >= 0 && size < (1 / mouse.zoom)) {
-
-    stats.totalLeafOps += input.indices.length
-    stats.totalLeaves++;
-    stats.opsPerLeaf.push(input.indices.length);
-    ctx.fillStyle = "white"
-    ctx.fillRect(ix[0], iy[0], (ix[1] - ix[0]), (iy[1] - iy[0]));
-  } else {
-    ctx.fillStyle = `hsla(${size}, 100%, 55%, .75)`
-    ctx.fillRect(ix[0], iy[0], (ix[1] - ix[0]), (iy[1] - iy[0]));
-  }
-  return r;
-}
-
 var keys = {};
 document.addEventListener("keydown", (e) => {
   keys[e.code] = true
@@ -174,7 +158,19 @@ console.clear()
     ly,
     ux,
     uy,
-    addQuad,
+    (x, y, w, h, input, depth) => {
+      var size = Math.max(w, h);
+      if (size < (1 / mouse.zoom)) {
+        stats.totalLeafOps += input.indices.length
+        stats.totalLeaves++;
+        stats.opsPerLeaf.push(input.indices.length);
+        ctx.fillStyle = "white"
+        ctx.fillRect(x, y, w, h);
+      } else {
+        ctx.fillStyle = `hsla(${size}, 100%, 55%, .75)`
+        ctx.fillRect(x, y, w, h);
+      }
+    },
     mouse.zoom,
     0
   );
