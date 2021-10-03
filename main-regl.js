@@ -8,21 +8,33 @@ const MAX_OPS = (1<<21);
 const evaluatorContext = {
   shapeMode: 0,
   pointLoc: 0,
+  colorLoc: 0,
   points: new Float32Array(MAX_OPS * 3),
+  colors: new Float32Array(MAX_OPS * 3),
   pointBuffer: regl.buffer({
+    length: MAX_OPS * 3,
+    usage: "dynamic",
+    type: "float"
+  }),
+  colorBuffer: regl.buffer({
     length: MAX_OPS * 3,
     usage: "dynamic",
     type: "float"
   }),
 
   reset() {
-    this.pointLoc = 0;
+    this.pointLoc = 0
+    this.colorLoc = 0
   },
 
-  addPoint(x, y, r) {
+  addPoint(x, y, radius, r, g, b) {
     this.points[this.pointLoc++] = x
     this.points[this.pointLoc++] = y
-    this.points[this.pointLoc++] = r
+    this.points[this.pointLoc++] = radius
+
+    this.colors[this.colorLoc++] = r
+    this.colors[this.colorLoc++] = g
+    this.colors[this.colorLoc++] = b
   }
 }
 
@@ -77,7 +89,7 @@ var shapes = [
   [0, 90, 100, 1],
 ]
 
-for (var i=0; i<20000; i++) {
+for (var i=0; i<200; i++) {
   // shapes.push([
   //   (Math.random() * 2.0 - 1.0) * 1000,
   //   (Math.random() * 2.0 - 1.0) * 1000,
@@ -101,22 +113,33 @@ const drawPoints = regl({
   depth: { enable: false },
   vert: `
   precision mediump float;
-  attribute vec3 position;
+  attribute vec3 aPosition;
+  attribute vec3 aColor;
   uniform mat4 worldToScreen;
+
+  varying vec4 color;
+
   void main() {
-    gl_PointSize = position.z;
-    gl_Position = worldToScreen * vec4(position.xy, 0, 1);
+    gl_PointSize = aPosition.z;
+    gl_Position = worldToScreen * vec4(aPosition.xy, 0, 1);
+    color = vec4(aColor, 1.0);
   }`,
 
   frag: `
   precision lowp float;
+  varying vec4 color;
   void main() {
-    gl_FragColor = vec4(1);
+    gl_FragColor = color;
   }`,
 
   attributes: {
-    position: {
+    aPosition: {
       buffer: regl.prop("pointBuffer"),
+      stride: 4 * 3,
+      offset: 0
+    },
+    aColor: {
+      buffer: regl.prop("colorBuffer"),
       stride: 4 * 3,
       offset: 0
     },
@@ -149,6 +172,12 @@ regl.frame((ctx) => {
   viewport[0] = 0.5 * ctx.viewportWidth / ctx.pixelRatio;
   viewport[1] = 0.5 * ctx.viewportHeight / ctx.pixelRatio;
 
+  var debug = {
+    jitter:  (document.querySelector("#stats .jitter input") || {}).checked,
+    quadtree:  (document.querySelector("#stats .quadtree input") || {}).checked,
+    leaves:  (document.querySelector("#stats .leaves input") || {}).checked,
+  }
+
   // rebuild the point buffer
   const start = performance.now();
   {
@@ -156,7 +185,7 @@ regl.frame((ctx) => {
     stats.reset();
 
     var inputShapes;
-    if (document.querySelector("#stats .jitter input").checked) {
+    if (debug.jitter) {
       inputShapes = shapes.map(shape => [
         shape[0] + (Math.random() - 0.5) * 2.5 / mouse.zoom,
         shape[1] + (Math.random() - 0.5) * 2.5 / mouse.zoom,
@@ -212,15 +241,45 @@ regl.frame((ctx) => {
       ly,
       ux,
       uy,
-      (x, y, w, h, input, depth) => {
+      (x, y, w, h, input, scale, depth) => {
         var size = Math.max(w, h);
+        var radius = size * 0.5
+        var cx = x + radius
+        var cy = y + radius
+
+
         if (size < (1 / mouse.zoom)) {
+          if (!debug.leaves) {
+            return;
+          }
           stats.totalLeafOps += input.indices.length
           stats.totalLeaves++;
           stats.opsPerLeaf.push(input.indices.length);
-          evaluatorContext.addPoint(x, y, 1);
-        } else {
-          // evaluatorContext.addPoint(x, y, size);
+          evaluatorContext.addPoint(cx, cy, 1, 1, 1, 1);
+        } else if (debug.quadtree){
+
+          // extracted from https://gist.github.com/mjackson/5311256
+          var h = depth / 10.0
+          var s = 1.0
+          var v = .75
+          var r, g, b;
+
+          var i = Math.floor(h * 6);
+          var f = h * 6 - i;
+          var p = v * (1 - s);
+          var q = v * (1 - f * s);
+          var t = v * (1 - (1 - f) * s);
+
+          switch (i % 6) {
+            case 0: r = v, g = t, b = p; break;
+            case 1: r = q, g = v, b = p; break;
+            case 2: r = p, g = v, b = t; break;
+            case 3: r = p, g = q, b = v; break;
+            case 4: r = t, g = p, b = v; break;
+            case 5: r = v, g = p, b = q; break;
+          }
+
+          evaluatorContext.addPoint(cx, cy, size * mouse.zoom, r, g, b);
           //  TODO: add a colored quad
           // addQuad.fillStyle = `hsla(${size}, 100%, 55%, .75)`
         }
@@ -238,10 +297,14 @@ regl.frame((ctx) => {
   evaluatorContext.pointBuffer.subdata(
     new Float32Array(evaluatorContext.points.buffer, 0, evaluatorContext.pointLoc)
   )
+  evaluatorContext.colorBuffer.subdata(
+    new Float32Array(evaluatorContext.colors.buffer, 0, evaluatorContext.colorLoc)
+  )
 
   drawPoints({
     count: evaluatorContext.pointLoc / 3,
     pointBuffer: evaluatorContext.pointBuffer,
+    colorBuffer: evaluatorContext.colorBuffer,
     worldToScreen: mat4.ortho([], -w, w, h, -h, -1, 1)
   })
 
