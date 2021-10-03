@@ -7,19 +7,22 @@ const viewport = [0,0];
 const MAX_OPS = (1<<21);
 const evaluatorContext = {
   shapeMode: 0,
-  points: [],
+  pointLoc: 0,
+  points: new Float32Array(MAX_OPS * 3),
   pointBuffer: regl.buffer({
-    length: MAX_OPS * 2,
+    length: MAX_OPS * 3,
     usage: "dynamic",
     type: "float"
   }),
 
   reset() {
-    this.points.length = 0;
+    this.pointLoc = 0;
   },
 
-  addPoint(x, y) {
-    this.points.push(x, y);
+  addPoint(x, y, r) {
+    this.points[this.pointLoc++] = x
+    this.points[this.pointLoc++] = y
+    this.points[this.pointLoc++] = r
   }
 }
 
@@ -98,11 +101,11 @@ const drawPoints = regl({
   depth: { enable: false },
   vert: `
   precision mediump float;
-  attribute vec2 position;
+  attribute vec3 position;
   uniform mat4 worldToScreen;
   void main() {
-    gl_PointSize = 1.0;
-    gl_Position = worldToScreen * vec4(position, 0, 1);
+    gl_PointSize = position.z;
+    gl_Position = worldToScreen * vec4(position.xy, 0, 1);
   }`,
 
   frag: `
@@ -114,7 +117,7 @@ const drawPoints = regl({
   attributes: {
     position: {
       buffer: regl.prop("pointBuffer"),
-      stride: 4 * 2,
+      stride: 4 * 3,
       offset: 0
     },
   },
@@ -215,8 +218,9 @@ regl.frame((ctx) => {
           stats.totalLeafOps += input.indices.length
           stats.totalLeaves++;
           stats.opsPerLeaf.push(input.indices.length);
-          evaluatorContext.addPoint(x, y);
+          evaluatorContext.addPoint(x, y, 1);
         } else {
+          // evaluatorContext.addPoint(x, y, size);
           //  TODO: add a colored quad
           // addQuad.fillStyle = `hsla(${size}, 100%, 55%, .75)`
         }
@@ -231,10 +235,12 @@ regl.frame((ctx) => {
     color: [0, 0, 0, 1]
   })
 
-  evaluatorContext.pointBuffer.subdata(evaluatorContext.points)
+  evaluatorContext.pointBuffer.subdata(
+    new Float32Array(evaluatorContext.points.buffer, 0, evaluatorContext.pointLoc)
+  )
 
   drawPoints({
-    count: evaluatorContext.points.length / 2,
+    count: evaluatorContext.pointLoc / 3,
     pointBuffer: evaluatorContext.pointBuffer,
     worldToScreen: mat4.ortho([], -w, w, h, -h, -1, 1)
   })
